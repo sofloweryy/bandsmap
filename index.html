@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>中国独立乐队地图</title>
-    <!-- 引入 Tailwind CSS 样式 -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- 引入 ECharts 地图核心库 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <!-- 引入中国地图 JSON 数据 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
-    <!-- 引入 Supabase 客户端 SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         ::-webkit-scrollbar { width: 6px; }
@@ -19,7 +15,6 @@
 </head>
 <body class="bg-slate-950 text-slate-100 h-screen flex flex-col overflow-hidden">
 
-    <!-- 顶部导航栏 -->
     <header class="h-16 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between shrink-0">
         <div class="flex items-center space-x-3">
             <span class="text-2xl">🎸</span>
@@ -32,10 +27,8 @@
         </div>
     </header>
 
-    <!-- 主体区域 -->
     <div class="flex-1 flex overflow-hidden">
         
-        <!-- 左侧：乐队列表与筛选 -->
         <aside class="w-80 bg-slate-900/80 border-r border-slate-800 flex flex-col shrink-0">
             <div class="p-4 border-b border-slate-800">
                 <input type="text" id="searchInput" placeholder="搜索乐队名称或城市..." 
@@ -46,11 +39,9 @@
             </div>
         </aside>
 
-        <!-- 右侧：地图容器 -->
         <main class="flex-1 relative bg-slate-950">
             <div id="mapContainer" class="w-full h-full"></div>
             
-            <!-- 乐队详情悬浮窗 -->
             <div id="bandCard" class="absolute top-6 right-6 w-80 bg-slate-900/95 border border-slate-700 rounded-xl p-5 shadow-2xl backdrop-blur-md hidden transition-all duration-300">
                 <button onclick="closeCard()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-sm font-bold">✕</button>
                 <img id="cardImage" src="" alt="" class="w-full h-40 object-cover rounded-lg mb-4 bg-slate-800">
@@ -66,7 +57,6 @@
     </div>
 
     <script>
-        // Supabase 配置
         const SUPABASE_URL = 'https://hrgzmwtgpacdxifcevwy.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_4XcXlLh77BtvmIajOGbpPA_T7d6b9fu'; 
         
@@ -93,11 +83,7 @@
                     map: 'china',
                     roam: true,
                     zoom: 1.2,
-                    // 限制缩放比例，防止地图被缩得太小而“隐身”
-                    scaleLimit: {
-                        min: 0.8,
-                        max: 8
-                    },
+                    scaleLimit: { min: 0.8, max: 10 },
                     itemStyle: {
                         areaColor: '#1e293b', 
                         borderColor: '#334155',
@@ -147,6 +133,7 @@
 
                 if (error) throw error;
 
+                // 适配经纬度坐标 [经度, 纬度]
                 allBands = data.map(item => ({
                     id: item.id,
                     name: item.name,
@@ -154,7 +141,7 @@
                     style: item.style,
                     description: item.description,
                     cover_url: item.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80',
-                    value: item.city 
+                    value: [item.longitude, item.latitude] 
                 }));
 
                 renderList(allBands);
@@ -173,7 +160,7 @@
                 style: b.style,
                 description: b.description,
                 cover_url: b.cover_url,
-                value: [b.city] 
+                value: b.value // 传入 [经度, 纬度]
             }));
 
             myChart.setOption({
@@ -201,11 +188,20 @@
             `).join('');
         }
 
+        // 核心：点击左侧乐队，地图自动锚定并平移过去
         function selectBand(bandName) {
             const band = allBands.find(b => b.name === bandName);
             if (!band) return;
 
             showBandDetail(band);
+
+            // 让 ECharts 地图平移(center)并放大(zoom)到该经纬度
+            myChart.setOption({
+                geo: {
+                    center: band.value, // 传入 [经度, 纬度]
+                    zoom: 4             // 放大倍数，数字越大推得越近
+                }
+            });
         }
 
         function showBandDetail(band) {
@@ -219,6 +215,13 @@
 
         function closeCard() {
             document.getElementById('bandCard').classList.add('hidden');
+            // 关闭卡片时恢复默认全国视角
+            myChart.setOption({
+                geo: {
+                    zoom: 1.2,
+                    center: null
+                }
+            });
         }
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
