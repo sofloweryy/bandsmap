@@ -93,6 +93,11 @@
                     map: 'china',
                     roam: true,
                     zoom: 1.2,
+                    // 限制缩放比例，防止地图被缩得太小而“隐身”
+                    scaleLimit: {
+                        min: 0.8,
+                        max: 8
+                    },
                     itemStyle: {
                         areaColor: '#1e293b', 
                         borderColor: '#334155',
@@ -107,7 +112,6 @@
                     name: '乐队分布',
                     type: 'scatter',
                     coordinateSystem: 'geo',
-                    // ECharts 允许直接用城市名作为 name，它会自动去地图组件里找对应的经纬度
                     data: [],
                     symbolSize: 14,
                     itemStyle: {
@@ -143,7 +147,6 @@
 
                 if (error) throw error;
 
-                // 直接把数据库里的 city 赋值给 name，ECharts 就会自动匹配该城市的经纬度
                 allBands = data.map(item => ({
                     id: item.id,
                     name: item.name,
@@ -151,8 +154,6 @@
                     style: item.style,
                     description: item.description,
                     cover_url: item.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80',
-                    // 在 ECharts 中，如果 coordinateSystem 是 geo，
-                    // 只要 data 项里的 name 是中国地名（如 "北京"、"石家庄"），它就会自动解析坐标！
                     value: item.city 
                 }));
 
@@ -166,25 +167,13 @@
         }
 
         function updateMapData(bands) {
-            // 转换为 ECharts 散点格式：每个点带上 city 名作为 name，ECharts 自动定位
-            const mapData = bands.map(b => ({
-                name: b.city, // 关键：用城市名让 ECharts 自动定位
-                bandName: b.name,
-                style: b.style,
-                city: b.city,
-                description: b.description,
-                cover_url: b.cover_url,
-                value: [] // 留空，由 ECharts 内部根据地名匹配
-            }));
-
-            // 重新包装以便 tooltip 能拿到乐队真实名字
             const formattedData = bands.map(b => ({
-                name: b.name, // 悬浮提示显示的名称
+                name: b.name, 
                 city: b.city,
                 style: b.style,
                 description: b.description,
                 cover_url: b.cover_url,
-                value: [b.city] // 传入城市名让 geo 自动解析
+                value: [b.city] 
             }));
 
             myChart.setOption({
