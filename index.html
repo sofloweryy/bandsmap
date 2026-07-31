@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>独立乐队地图</title>
+    
+    <!-- 如果你原本使用了 Leaflet 或其他地图 CDN，请在这里保留你的 CSS 链接 -->
+    <!-- 例如: <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" /> -->
+
     <style>
         :root {
             --bg-color: #090d16;
-            --panel-bg: rgba(20, 27, 45, 0.75);
+            --panel-bg: rgba(20, 27, 45, 0.85);
             --border-color: rgba(255, 255, 255, 0.08);
             --accent-glow: rgba(56, 189, 248, 0.3);
             --text-main: #f8fafc;
@@ -23,11 +27,20 @@
         html, body {
             width: 100%;
             height: 100%;
-            overflow-x: hidden;
-            -webkit-overflow-scrolling: touch;
+            overflow: hidden; /* 防止页面整体滚动，由地图接管全屏 */
             background-color: var(--bg-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: var(--text-main);
+        }
+
+        /* 真实地图容器：撑满全屏并放在底层 */
+        #map {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
         }
 
         /* 顶部导航条样式 */
@@ -43,8 +56,9 @@
             padding: 0 24px;
             background: linear-gradient(to bottom, rgba(9, 13, 22, 0.9), rgba(9, 13, 22, 0.4));
             backdrop-filter: blur(10px);
-            z-index: 100;
+            z-index: 1000;
             border-bottom: 1px solid var(--border-color);
+            pointer-events: auto;
         }
 
         .site-title {
@@ -67,9 +81,9 @@
             justify-content: center;
             align-items: center;
             padding: 0 16px;
-            background: rgba(9, 13, 22, 0.8);
+            background: rgba(9, 13, 22, 0.85);
             backdrop-filter: blur(8px);
-            z-index: 100;
+            z-index: 1000;
             border-top: 1px solid var(--border-color);
             font-size: 12px;
             color: var(--text-secondary);
@@ -77,6 +91,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            pointer-events: auto;
         }
 
         .footer-bar span {
@@ -85,14 +100,8 @@
             margin-left: 4px;
         }
 
-        /* 弹窗高级感玻璃拟态微动效设计 */
+        /* 地图弹窗样式（适配你地图库生成的弹出层或自定义弹窗） */
         .band-popup {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.95);
-            width: 88%;
-            max-width: 320px;
             background: var(--panel-bg);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
@@ -100,18 +109,11 @@
             border-radius: 20px;
             padding: 24px 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 20px var(--accent-glow);
-            z-index: 1000;
-            animation: popupFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            color: var(--text-main);
+            width: 280px;
         }
 
-        @keyframes popupFadeIn {
-            to {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 1;
-            }
-        }
-
-        /* 关闭按钮交互 */
+        /* 关闭按钮 */
         .close-btn {
             position: absolute;
             top: 14px;
@@ -138,12 +140,12 @@
 
         /* 头像样式：完美的圆形头像并带有流光边框 */
         .band-avatar {
-            width: 68px;
-            height: 68px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             object-fit: cover;
             display: block;
-            margin: 0 auto 14px auto;
+            margin: 0 auto 12px auto;
             border: 2px solid #38bdf8;
             box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
         }
@@ -153,14 +155,14 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .band-name {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: #facc15;
-            margin: 0 0 8px 0;
+            margin: 0 0 6px 0;
             letter-spacing: 0.5px;
         }
 
@@ -169,7 +171,7 @@
             border: 1px solid rgba(56, 189, 248, 0.3);
             color: #e2e8f0;
             font-size: 11px;
-            padding: 4px 12px;
+            padding: 3px 10px;
             border-radius: 20px;
             font-weight: 500;
         }
@@ -180,10 +182,6 @@
             color: var(--text-secondary);
             text-align: center;
             margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
         }
     </style>
 </head>
@@ -194,28 +192,21 @@
         <div class="site-title">🎸 独立乐队地图</div>
     </header>
 
-    <!-- 地图或主容器区域占位（实际按你原有的地图SDK初始化即可） -->
-    <div id="map-container" style="width: 100%; height: 100%;"></div>
-
-    <!-- 弹窗示例（供渲染参考） -->
-    <div class="band-popup">
-        <button class="close-btn">&times;</button>
-        
-        <!-- 精致圆形头像 -->
-        <img src="https://picsum.photos/id/1082/200/200" alt="乐队头像" class="band-avatar">
-        
-        <div class="band-header">
-            <h2 class="band-name">痛仰</h2>
-            <span class="band-style">另类摇滚 / 硬摇滚</span>
-        </div>
-        
-        <p class="band-city">📍 北京</p>
-    </div>
+    <!-- 真实地图容器（地图正常渲染在这里面） -->
+    <div id="map"></div>
 
     <!-- 底部版权标语栏 -->
     <footer class="footer-bar">
         仅供娱乐｜欢迎乐迷进群交流｜联系美丽且智慧的开发者：<span>vildbloom</span>
     </footer>
 
+    <!-- 如果你原本有引入 Supabase JS SDK 或 地图逻辑脚本，请放在下方 -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> -->
+    <script>
+        // 在这里写你原本初始化地图、连接 Supabase 并加载乐队数据的 JS 代码
+        // 例如：
+        // const map = L.map('map').setView([35.0, 105.0], 4);
+        // ... 你的其他地图逻辑
+    </script>
 </body>
 </html>
