@@ -15,9 +15,9 @@
     <style>
         :root {
             --bg-color: #090d16;
-            --panel-bg: rgba(20, 27, 45, 0.85);
+            --panel-bg: rgba(15, 23, 42, 0.92);
             --border-color: rgba(255, 255, 255, 0.08);
-            --accent-glow: rgba(56, 189, 248, 0.3);
+            --accent-color: #38bdf8;
             --text-main: #f8fafc;
             --text-secondary: #94a3b8;
         }
@@ -62,7 +62,16 @@
             -webkit-text-fill-color: transparent;
         }
 
-        /* 主体布局：左侧列表 + 右侧地图 */
+        .user-quota {
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 主体布局 */
         .main-layout {
             position: absolute;
             top: 56px;
@@ -72,44 +81,63 @@
             display: flex;
         }
 
-        /* 左侧乐队列表抽屉 */
+        /* 左侧面板 */
         .sidebar {
-            width: 320px;
+            width: 340px;
             height: 100%;
-            background: rgba(15, 23, 42, 0.9);
+            background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             z-index: 999;
-            transition: transform 0.3s ease;
         }
 
-        .sidebar-header {
-            padding: 16px;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-secondary);
+        .search-box-container {
+            padding: 12px;
             border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .rank-section-title {
+            padding: 8px 16px 4px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #facc15;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
         .band-list {
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding: 12px;
+            padding: 8px 12px;
         }
 
-        /* 列表项卡片 */
         .band-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            background: rgba(255, 255, 255, 0.03);
+            gap: 10px;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            margin-bottom: 8px;
+            border-radius: 10px;
+            margin-bottom: 6px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -117,15 +145,25 @@
         .band-item:hover, .band-item.active {
             background: rgba(56, 189, 248, 0.1);
             border-color: rgba(56, 189, 248, 0.4);
-            transform: translateX(2px);
         }
 
+        .band-rank-num {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            width: 18px;
+            text-align: center;
+        }
+        .band-item:nth-child(1) .band-rank-num { color: #f59e0b; }
+        .band-item:nth-child(2) .band-rank-num { color: #94a3b8; }
+        .band-item:nth-child(3) .band-rank-num { color: #b45309; }
+
         .band-item-avatar {
-            width: 42px;
-            height: 42px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             object-fit: cover;
-            border: 1px solid #38bdf8;
+            border: 1px solid var(--accent-color);
         }
 
         .band-item-info {
@@ -134,18 +172,26 @@
         }
 
         .band-item-name {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #facc15;
-            margin-bottom: 4px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .band-item-meta {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-secondary);
+        }
+
+        .band-item-likes {
+            font-size: 11px;
+            color: #f43f5e;
+            font-weight: 600;
+            background: rgba(244, 63, 94, 0.1);
+            padding: 2px 6px;
+            border-radius: 6px;
         }
 
         /* 右侧地图容器 */
@@ -176,28 +222,28 @@
         }
 
         .footer-bar span {
-            color: #38bdf8;
+            color: var(--accent-color);
             font-weight: 500;
             margin-left: 4px;
         }
 
-        /* 自定义 Leaflet 弹窗气泡美化 */
+        /* Leaflet 弹窗暗黑美化 */
         .leaflet-popup-content-wrapper {
             background: var(--panel-bg) !important;
             backdrop-filter: blur(16px);
             border: 1px solid var(--border-color);
             border-radius: 16px !important;
-            color: var(--text-main) !important;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6) !important;
+            color: #fff !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8) !important;
         }
         .leaflet-popup-tip {
             background: var(--panel-bg) !important;
         }
 
-        /* 弹窗内部排版：圆形头像、无描述文字 */
         .popup-content {
             text-align: center;
-            padding: 10px 4px 4px 4px;
+            padding: 6px;
+            width: 180px;
         }
         .popup-avatar {
             width: 56px;
@@ -205,14 +251,14 @@
             border-radius: 50%;
             object-fit: cover;
             margin: 0 auto 8px auto;
-            border: 2px solid #38bdf8;
+            border: 2px solid var(--accent-color);
             display: block;
         }
         .popup-name {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             color: #facc15;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .popup-style {
             background: rgba(56, 189, 248, 0.15);
@@ -222,46 +268,53 @@
             padding: 2px 8px;
             border-radius: 10px;
             display: inline-block;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .popup-city {
             font-size: 12px;
             color: var(--text-secondary);
+            margin-bottom: 10px;
         }
-
-        /* 移动端响应式适配：手机上默认隐藏或精简侧边栏 */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: absolute;
-                left: 0;
-                top: 0;
-                bottom: 0;
-                width: 260px;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-            .sidebar.open {
-                transform: translateX(0);
-            }
+        .like-btn {
+            background: linear-gradient(135deg, #f43f5e, #fb7185);
+            border: none;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
+        }
+        .like-btn:hover {
+            opacity: 0.9;
+        }
+        .like-count-display {
+            font-size: 11px;
+            color: #f43f5e;
+            margin-top: 6px;
         }
     </style>
 </head>
 <body>
 
     <header class="header-bar">
-        <div class="site-title">🎸 独立乐队地图</div>
+        <div class="site-title">🎸 中国独立乐队地图</div>
+        <div class="user-quota" id="quotaDisplay">今日剩余点赞: 10/10</div>
     </header>
 
     <div class="main-layout">
-        <!-- 左侧乐队列表 -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">乐队目录（点击联动地图）</div>
-            <div class="band-list" id="bandList">
-                <!-- 动态加载列表 -->
+        <!-- 左侧：搜索 + 排行榜 -->
+        <div class="sidebar">
+            <div class="search-box-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索乐队、城市、风格...">
             </div>
+            <div class="rank-section-title">🔥 获赞热度排行榜</div>
+            <div class="band-list" id="bandList"></div>
         </div>
 
-        <!-- 右侧地图 -->
+        <!-- 右侧：绝对稳定的地图容器 -->
         <div id="map"></div>
     </div>
 
@@ -275,90 +328,163 @@
         // ==========================================
         const SUPABASE_URL = '你的Supabase项目URL'; 
         const SUPABASE_ANON_KEY = '你的Supabase匿名API密匙(anon key)';
-        
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 初始化地图（以中国中心为视口）
-        const map = L.map('map', {
-            zoomControl: false
-        }).setView([35.0, 105.0], 4);
+        // 初始化地图，中心对准中国
+        const map = L.map('map', { zoomControl: false }).setView([35.0, 105.0], 4);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         // 加载暗黑科技感地图底图
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap & CARTO',
-            maxZoom: 19
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
-        // 添加缩放控件到右下角
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-        let markersMap = {}; // 存储地图上的 Marker 对象以便联动
+        let allBands = [];
+        let markersList = [];
 
         // ==========================================
-        // 2. 从数据库加载数据并渲染
+        // 2. 点赞额度（自然日计算）
         // ==========================================
-        async function loadBands() {
-            const { data: bands, error } = await supabaseClient
+        function checkAndGetQuota() {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            let record = JSON.parse(localStorage.getItem('band_like_quota') || '{}');
+            if (record.date !== todayStr) {
+                record = { date: todayStr, count: 10 };
+                localStorage.setItem('band_like_quota', JSON.stringify(record));
+            }
+            return record.count;
+        }
+
+        function updateQuotaDisplay() {
+            document.getElementById('quotaDisplay').innerText = `今日剩余点赞: ${checkAndGetQuota()}/10`;
+        }
+
+        // ==========================================
+        // 3. 加载数据与渲染
+        // ==========================================
+        async function fetchBands() {
+            const { data, error } = await supabaseClient
                 .from('bands')
-                .select('*');
+                .select('*')
+                .order('likes', { ascending: false });
 
             if (error) {
-                console.error('获取乐队数据失败:', error);
+                console.error('加载失败:', error);
                 return;
             }
+            allBands = data || [];
+            renderUI(allBands);
+        }
 
-            const bandListEl = document.getElementById('bandList');
-            bandListEl.innerHTML = '';
+        function renderUI(bands) {
+            updateQuotaDisplay();
+            renderList(bands);
+            renderMapMarkers(bands);
+        }
 
-            bands.forEach(band => {
-                if (!band.latitude || !band.longitude) return;
+        // 渲染左侧列表
+        function renderList(bands) {
+            const listEl = document.getElementById('bandList');
+            listEl.innerHTML = '';
 
-                // 创建地图 Marker
-                const marker = L.marker([band.latitude, band.longitude]).addTo(map);
-
-                // 绑定点击弹窗（去掉了描述文字，缩小为圆形头像）
-                const popupHtml = `
-                    <div class="popup-content">
-                        <img src="${band.cover_url || 'https://picsum.photos/200/200'}" class="popup-avatar" alt="头像">
-                        <div class="popup-name">${band.name}</div>
-                        <div class="popup-style">${band.style || '独立音乐'}</div>
-                        <div class="popup-city">📍 ${band.city}</div>
-                    </div>
-                `;
-                marker.bindPopup(popupHtml);
-
-                markersMap[band.id] = marker;
-
-                // 渲染左侧列表项
-                const itemEl = document.createElement('div');
-                itemEl.className = 'band-item';
-                itemEl.innerHTML = `
-                    <img src="${band.cover_url || 'https://picsum.photos/200/200'}" class="band-item-avatar" alt="">
+            bands.forEach((band, index) => {
+                const item = document.createElement('div');
+                item.className = 'band-item';
+                item.innerHTML = `
+                    <div class="band-rank-num">${index + 1}</div>
+                    <img src="${band.cover_url || 'https://picsum.photos/200/200'}" class="band-item-avatar">
                     <div class="band-item-info">
                         <div class="band-item-name">${band.name}</div>
                         <div class="band-item-meta">${band.city} · ${band.style || ''}</div>
                     </div>
+                    <div class="band-item-likes">👍 ${band.likes || 0}</div>
                 `;
 
-                // 左侧点击联动地图锚定与打开弹窗
-                itemEl.addEventListener('click', () => {
-                    // 移除其他选中态
+                item.addEventListener('click', () => {
                     document.querySelectorAll('.band-item').forEach(el => el.classList.remove('active'));
-                    itemEl.classList.add('active');
+                    item.classList.add('active');
 
-                    // 地图平滑飞向目标坐标并打开弹窗
-                    map.flyTo([band.latitude, band.longitude], 10, {
-                        animate: true,
-                        duration: 1.2
-                    });
-                    marker.openPopup();
+                    if (band.latitude && band.longitude) {
+                        map.flyTo([band.latitude, band.longitude], 10, { duration: 1 });
+                        // 找到对应 marker 并打开弹窗
+                        markersList.forEach(m => {
+                            if (m.bandId === band.id) m.marker.openPopup();
+                        });
+                    }
                 });
 
-                bandListEl.appendChild(itemEl);
+                listEl.appendChild(item);
             });
         }
 
-        loadBands();
+        // 渲染地图 Marker
+        function renderMapMarkers(bands) {
+            // 清除旧 marker
+            markersList.forEach(item => map.removeLayer(item.marker));
+            markersList = [];
+
+            bands.forEach(band => {
+                if (!band.latitude || !band.longitude) return;
+
+                const marker = L.marker([band.latitude, band.longitude]).addTo(map);
+
+                const popupHtml = `
+                    <div class="popup-content">
+                        <img src="${band.cover_url || 'https://picsum.photos/200/200'}" class="popup-avatar">
+                        <div class="popup-name">${band.name}</div>
+                        <div class="popup-style">${band.style || '独立音乐'}</div>
+                        <div class="popup-city">📍 ${band.city}</div>
+                        <button class="like-btn" onclick="handleLike(${band.id})">❤️ 为TA点赞</button>
+                        <div class="like-count-display">获赞: <span id="like-count-${band.id}">${band.likes || 0}</span> 票</div>
+                    </div>
+                `;
+                marker.bindPopup(popupHtml);
+                markersList.push({ bandId: band.id, marker });
+            });
+        }
+
+        // ==========================================
+        // 4. 点赞处理
+        // ==========================================
+        window.handleLike = async function(bandId) {
+            let record = JSON.parse(localStorage.getItem('band_like_quota'));
+            if (record.count <= 0) {
+                alert('⏰ 今日 10 次点赞机会已用完，请明天再来为喜欢的乐队打Call！');
+                return;
+            }
+
+            record.count -= 1;
+            localStorage.setItem('band_like_quota', JSON.stringify(record));
+            updateQuotaDisplay();
+
+            const band = allBands.find(b => b.id === bandId);
+            const newLikes = (band.likes || 0) + 1;
+
+            await supabaseClient.from('bands').update({ likes: newLikes }).eq('id', bandId);
+
+            band.likes = newLikes;
+            allBands.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+
+            const span = document.getElementById(`like-count-${bandId}`);
+            if (span) span.innerText = newLikes;
+
+            renderList(allBands);
+        };
+
+        // 搜索筛选
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const kw = e.target.value.toLowerCase().trim();
+            const filtered = allBands.filter(b => 
+                b.name.toLowerCase().includes(kw) || 
+                b.city.toLowerCase().includes(kw) || 
+                (b.style && b.style.toLowerCase().includes(kw))
+            );
+            renderList(filtered);
+            renderMapMarkers(filtered);
+        });
+
+        fetchBands();
     </script>
 </body>
 </html>
