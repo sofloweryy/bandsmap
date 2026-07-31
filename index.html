@@ -31,7 +31,6 @@
         .site-title { font-size: 16px; font-weight: 700; background: linear-gradient(135deg, #38bdf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .user-quota { font-size: 11px; color: var(--text-secondary); background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border-color); }
 
-        /* 手机端专属切换 Tab（PC端隐藏） */
         .mobile-tabs {
             display: none; position: absolute; top: 56px; left: 0; width: 100%; height: 40px;
             background: rgba(15, 23, 42, 0.98); border-bottom: 1px solid var(--border-color); z-index: 999;
@@ -79,36 +78,37 @@
         .map-container { flex: 1; position: relative; height: 100%; background: #090d16; }
         #chinaMap { width: 100%; height: 100%; }
 
+        /* 优化后的紧凑精简弹窗样式 */
         .detail-card {
             position: absolute; right: 20px; top: 20px; width: 260px;
-            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px;
-            padding: 20px; text-align: center; color: #fff;
+            background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px;
+            padding: 14px 16px; text-align: center; color: #fff;
             box-shadow: 0 20px 40px rgba(0,0,0,0.8); z-index: 100;
             display: none;
         }
         .detail-card.show { display: block; }
         
         .close-btn {
-            position: absolute; top: 10px; right: 12px;
+            position: absolute; top: 8px; right: 10px;
             background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); 
-            color: var(--text-secondary); width: 24px; height: 24px; border-radius: 50%;
+            color: var(--text-secondary); width: 22px; height: 22px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 11px; cursor: pointer; transition: all 0.2s;
+            font-size: 10px; cursor: pointer; transition: all 0.2s;
         }
         .close-btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
 
-        .card-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin: 0 auto 10px auto; border: 2px solid #38bdf8; display: block; }
-        .card-name { font-size: 16px; font-weight: 700; color: #facc15; margin-bottom: 6px; }
-        .card-style { background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #e2e8f0; font-size: 11px; padding: 2px 10px; border-radius: 10px; display: inline-block; margin-bottom: 6px; }
-        .card-city { font-size: 12px; color: #94a3b8; margin-bottom: 14px; }
+        .card-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; margin: 0 auto 6px auto; border: 2px solid #38bdf8; display: block; }
+        .card-name { font-size: 15px; font-weight: 700; color: #facc15; margin-bottom: 4px; }
+        .card-style { background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #e2e8f0; font-size: 10px; padding: 2px 8px; border-radius: 8px; display: inline-block; margin-bottom: 4px; }
+        .card-city { font-size: 11px; color: #94a3b8; margin-bottom: 10px; }
         .like-btn {
             background: linear-gradient(135deg, #f43f5e, #fb7185); border: none; color: white;
-            font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 20px; cursor: pointer; width: 100%;
-            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4); transition: opacity 0.2s;
+            font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 16px; cursor: pointer; width: 100%;
+            box-shadow: 0 4px 10px rgba(244, 63, 94, 0.4); transition: opacity 0.2s;
         }
         .like-btn:hover { opacity: 0.9; }
-        .like-count-display { font-size: 12px; color: #f43f5e; margin-top: 10px; font-weight: 600; }
+        .like-count-display { font-size: 11px; color: #f43f5e; margin-top: 6px; font-weight: 600; }
 
         .footer-bar {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 36px;
@@ -118,9 +118,8 @@
         }
         .footer-bar span { color: var(--accent-color); font-weight: 500; margin-left: 4px; }
 
-        /* 📱 手机端响应式适配 (屏幕宽度 <= 768px) */
         @media screen and (max-width: 768px) {
-            .main-layout { top: 96px; } /* 给顶部的切换 Tab 腾出空间 */
+            .main-layout { top: 96px; }
             .mobile-tabs { display: flex; }
             
             .sidebar {
@@ -137,7 +136,7 @@
 
             .detail-card {
                 left: 12px; right: 12px; top: auto; bottom: 12px; width: auto;
-                max-width: none; border-radius: 14px; padding: 16px;
+                max-width: none; border-radius: 14px; padding: 12px 14px;
             }
         }
     </style>
@@ -149,7 +148,6 @@
         <div class="user-quota" id="quotaDisplay">今日剩余心心: 100/100</div>
     </header>
 
-    <!-- 手机端顶部切换 Tab -->
     <div class="mobile-tabs">
         <button class="mobile-tab-btn active" id="tabMap" onclick="switchMobileView('map')">🗺️ 地图模式</button>
         <button class="mobile-tab-btn" id="tabList" onclick="switchMobileView('list')">📋 乐队列表</button>
@@ -184,9 +182,12 @@
 
         let allBands = [];
         let currentSelectedBand = null;
-        const myChart = echarts.init(document.getElementById('chinaMap'));
+        const myChart = echarts.init(getElementByIdSafe('chinaMap'));
 
-        // 手机端视图切换函数
+        function getElementIdSafe(id) {
+            return document.getElementById(id);
+        }
+
         window.switchMobileView = function(view) {
             const mapPanel = document.getElementById('mapPanel');
             const sidebarPanel = document.getElementById('sidebarPanel');
@@ -260,16 +261,18 @@
 
             renderMap(allBands);
 
-            // 如果是在手机端点击列表，选中后自动切回地图展示
             if (window.innerWidth <= 768) {
                 switchMobileView('map');
             }
 
+            // 优化点击坐标聚焦：温和的放大倍数与平滑过渡
             if (panToCoord && band.longitude && band.latitude) {
                 myChart.setOption({
                     geo: {
                         center: [band.longitude, band.latitude],
-                        zoom: 1.6
+                        zoom: window.innerWidth <= 768 ? 2.2 : 1.8,
+                        animation: true,
+                        animationDuration: 500
                     }
                 });
             }
@@ -374,7 +377,7 @@
                     }
                 ]
             };
-            myChart.setOption(option);
+            myChart.setOption(option, false);
         }
 
         myChart.on('click', function (params) {
