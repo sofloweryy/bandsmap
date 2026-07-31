@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>独立乐队地图</title>
     
-    <!-- 引入 ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <!-- 引入中国地图 GeoJson 数据（国内稳定 CDN） -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
-    <!-- 引入 Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -67,22 +64,19 @@
         .band-item-meta { font-size: 11px; color: var(--text-secondary); }
         .band-item-likes { font-size: 11px; color: #f43f5e; font-weight: 600; background: rgba(244, 63, 94, 0.1); padding: 2px 6px; border-radius: 6px; }
 
-        /* 地图区及右侧悬浮详情卡片容器 */
         .map-container { flex: 1; position: relative; height: 100%; background: #090d16; }
         #chinaMap { width: 100%; height: 100%; }
 
-        /* 右侧详情卡片 */
         .detail-card {
             position: absolute; right: 24px; top: 24px; width: 260px;
             background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px;
             padding: 20px; text-align: center; color: #fff;
             box-shadow: 0 20px 40px rgba(0,0,0,0.8); z-index: 100;
-            display: none; /* 默认隐藏，有选中时显示 */
+            display: none;
         }
         .detail-card.show { display: block; }
         
-        /* 关闭按钮 */
         .close-btn {
             position: absolute; top: 12px; right: 14px;
             background: transparent; border: none; color: var(--text-secondary);
@@ -116,7 +110,7 @@
 
     <header class="header-bar">
         <div class="site-title">🎸 中国独立乐队地图</div>
-        <div class="user-quota" id="quotaDisplay">今日剩余点赞: 10/10</div>
+        <div class="user-quota" id="quotaDisplay">今日剩余心心: 100/100</div>
     </header>
 
     <div class="main-layout">
@@ -130,7 +124,6 @@
         
         <div class="map-container">
             <div id="chinaMap"></div>
-            <!-- 右侧详情与点赞卡片 -->
             <div class="detail-card" id="detailCard">
                 <button class="close-btn" onclick="closeDetailCard()">❌</button>
                 <div id="cardContent"></div>
@@ -153,16 +146,16 @@
 
         function checkAndGetQuota() {
             const todayStr = new Date().toISOString().slice(0, 10);
-            let record = JSON.parse(localStorage.getItem('band_like_quota') || '{}');
+            let record = JSON.parse(localStorage.getItem('band_like_quota_100') || '{}');
             if (record.date !== todayStr) {
-                record = { date: todayStr, count: 10 };
-                localStorage.setItem('band_like_quota', JSON.stringify(record));
+                record = { date: todayStr, count: 100 };
+                localStorage.setItem('band_like_quota_100', JSON.stringify(record));
             }
             return record.count;
         }
 
         function updateQuotaDisplay() {
-            document.getElementById('quotaDisplay').innerText = `今日剩余点赞: ${checkAndGetQuota()}/10`;
+            document.getElementById('quotaDisplay').innerText = `今日剩余心心: ${checkAndGetQuota()}/100`;
         }
 
         async function fetchBands() {
@@ -171,7 +164,9 @@
             allBands = data || [];
             renderUI(allBands);
             if (allBands.length > 0) {
-                selectBand(allBands[0]);
+                // 如果当前有选中的乐队，保持选中，否则选第一名
+                const target = currentSelectedBand ? allBands.find(b => b.id === currentSelectedBand.id) || allBands[0] : allBands[0];
+                selectBand(target);
             }
         }
 
@@ -197,8 +192,8 @@
                 <div class="card-name">${band.name}</div>
                 <div class="card-style">${band.style || '独立音乐'}</div>
                 <div class="card-city">📍 ${band.city}</div>
-                <button class="like-btn" onclick="handleLike(${band.id})">送心心💗</button>
-                <div class="like-count-display">获得: <span id="like-count-${band.id}">${band.likes || 0}</span> 💗</div>
+                <button class="like-btn" onclick="handleLike(${band.id})">送心心💖</button>
+                <div class="like-count-display">获得: <span id="like-count-${band.id}">${band.likes || 0}</span> 💖</div>
             `;
         }
 
@@ -222,7 +217,7 @@
                         <div class="band-item-name">${band.name}</div>
                         <div class="band-item-meta">${band.city} · ${band.style || ''}</div>
                     </div>
-                    <div class="band-item-likes">💗 ${band.likes || 0}</div>
+                    <div class="band-item-likes">💖 ${band.likes || 0}</div>
                 `;
                 item.addEventListener('click', () => {
                     selectBand(band);
@@ -280,18 +275,23 @@
         });
 
         window.handleLike = async function(bandId) {
-            let record = JSON.parse(localStorage.getItem('band_like_quota') || '{}');
+            let record = JSON.parse(localStorage.getItem('band_like_quota_100') || '{}');
             if (record.count <= 0) {
-                alert('⏰ 今日 10 次送心心机会已用完，请明天再来为喜欢的乐队打Call！');
+                alert('⏰ 今日 100 次送心心机会已用完，请明天再来为喜欢的乐队打Call！');
                 return;
             }
             record.count -= 1;
-            localStorage.setItem('band_like_quota', JSON.stringify(record));
+            localStorage.setItem('band_like_quota_100', JSON.stringify(record));
             updateQuotaDisplay();
 
             const band = allBands.find(b => b.id === bandId);
             const newLikes = (band.likes || 0) + 1;
-            await supabaseClient.from('bands').update({ likes: newLikes }).eq('id', bandId);
+            
+            // 同步更新到 Supabase 数据库
+            const { error } = await supabaseClient.from('bands').update({ likes: newLikes }).eq('id', bandId);
+            if (error) {
+                console.error("更新数据库失败:", error);
+            }
 
             band.likes = newLikes;
             allBands.sort((a, b) => (b.likes || 0) - (a.likes || 0));
@@ -299,6 +299,7 @@
             const span = document.getElementById(`like-count-${bandId}`);
             if (span) span.innerText = newLikes;
             renderList(allBands);
+            renderMap(allBands);
         };
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
