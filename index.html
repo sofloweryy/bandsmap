@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>独立乐队地图</title>
     
-    <!-- 如果你原本使用了 Leaflet 或其他地图 CDN，请在这里保留你的 CSS 链接 -->
-    <!-- 例如: <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" /> -->
+    <!-- 引入 Leaflet 地图样式与 JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- 引入 Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
@@ -27,71 +31,148 @@
         html, body {
             width: 100%;
             height: 100%;
-            overflow: hidden; /* 防止页面整体滚动，由地图接管全屏 */
+            overflow: hidden;
             background-color: var(--bg-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             color: var(--text-main);
         }
 
-        /* 真实地图容器：撑满全屏并放在底层 */
-        #map {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-
-        /* 顶部导航条样式 */
+        /* 顶部导航条 */
         .header-bar {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 60px;
+            height: 56px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 24px;
-            background: linear-gradient(to bottom, rgba(9, 13, 22, 0.9), rgba(9, 13, 22, 0.4));
+            padding: 0 20px;
+            background: rgba(9, 13, 22, 0.9);
             backdrop-filter: blur(10px);
             z-index: 1000;
             border-bottom: 1px solid var(--border-color);
-            pointer-events: auto;
         }
 
         .site-title {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 700;
-            letter-spacing: 1px;
             background: linear-gradient(135deg, #38bdf8, #c084fc);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        /* 底部标语/版权样式 */
+        /* 主体布局：左侧列表 + 右侧地图 */
+        .main-layout {
+            position: absolute;
+            top: 56px;
+            bottom: 36px;
+            left: 0;
+            width: 100%;
+            display: flex;
+        }
+
+        /* 左侧乐队列表抽屉 */
+        .sidebar {
+            width: 320px;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 999;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .band-list {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px;
+        }
+
+        /* 列表项卡片 */
+        .band-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .band-item:hover, .band-item.active {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: rgba(56, 189, 248, 0.4);
+            transform: translateX(2px);
+        }
+
+        .band-item-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #38bdf8;
+        }
+
+        .band-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .band-item-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #facc15;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .band-item-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* 右侧地图容器 */
+        #map {
+            flex: 1;
+            height: 100%;
+            background: #090d16;
+            z-index: 1;
+        }
+
+        /* 底部标语栏 */
         .footer-bar {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 40px;
+            height: 36px;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 0 16px;
-            background: rgba(9, 13, 22, 0.85);
+            background: rgba(9, 13, 22, 0.9);
             backdrop-filter: blur(8px);
             z-index: 1000;
             border-top: 1px solid var(--border-color);
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-secondary);
-            text-align: center;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            pointer-events: auto;
         }
 
         .footer-bar span {
@@ -100,113 +181,184 @@
             margin-left: 4px;
         }
 
-        /* 地图弹窗样式（适配你地图库生成的弹出层或自定义弹窗） */
-        .band-popup {
-            background: var(--panel-bg);
+        /* 自定义 Leaflet 弹窗气泡美化 */
+        .leaflet-popup-content-wrapper {
+            background: var(--panel-bg) !important;
             backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 24px 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 20px var(--accent-glow);
-            color: var(--text-main);
-            width: 280px;
+            border-radius: 16px !important;
+            color: var(--text-main) !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6) !important;
+        }
+        .leaflet-popup-tip {
+            background: var(--panel-bg) !important;
         }
 
-        /* 关闭按钮 */
-        .close-btn {
-            position: absolute;
-            top: 14px;
-            right: 14px;
-            width: 28px;
-            height: 28px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            color: var(--text-secondary);
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
+        /* 弹窗内部排版：圆形头像、无描述文字 */
+        .popup-content {
+            text-align: center;
+            padding: 10px 4px 4px 4px;
         }
-
-        .close-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: #fff;
-            transform: rotate(90deg);
-        }
-
-        /* 头像样式：完美的圆形头像并带有流光边框 */
-        .band-avatar {
-            width: 64px;
-            height: 64px;
+        .popup-avatar {
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             object-fit: cover;
-            display: block;
-            margin: 0 auto 12px auto;
+            margin: 0 auto 8px auto;
             border: 2px solid #38bdf8;
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+            display: block;
         }
-
-        /* 乐队头部信息 */
-        .band-header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .band-name {
-            font-size: 18px;
+        .popup-name {
+            font-size: 16px;
             font-weight: 700;
             color: #facc15;
-            margin: 0 0 6px 0;
-            letter-spacing: 0.5px;
+            margin-bottom: 6px;
         }
-
-        .band-style {
-            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(192, 132, 252, 0.15));
+        .popup-style {
+            background: rgba(56, 189, 248, 0.15);
             border: 1px solid rgba(56, 189, 248, 0.3);
             color: #e2e8f0;
-            font-size: 11px;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-weight: 500;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        .popup-city {
+            font-size: 12px;
+            color: var(--text-secondary);
         }
 
-        /* 城市样式 */
-        .band-city {
-            font-size: 13px;
-            color: var(--text-secondary);
-            text-align: center;
-            margin: 0;
+        /* 移动端响应式适配：手机上默认隐藏或精简侧边栏 */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 260px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- 顶部导航条 -->
     <header class="header-bar">
         <div class="site-title">🎸 独立乐队地图</div>
     </header>
 
-    <!-- 真实地图容器（地图正常渲染在这里面） -->
-    <div id="map"></div>
+    <div class="main-layout">
+        <!-- 左侧乐队列表 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">乐队目录（点击联动地图）</div>
+            <div class="band-list" id="bandList">
+                <!-- 动态加载列表 -->
+            </div>
+        </div>
 
-    <!-- 底部版权标语栏 -->
+        <!-- 右侧地图 -->
+        <div id="map"></div>
+    </div>
+
     <footer class="footer-bar">
         仅供娱乐｜欢迎乐迷进群交流｜联系美丽且智慧的开发者：<span>vildbloom</span>
     </footer>
 
-    <!-- 如果你原本有引入 Supabase JS SDK 或 地图逻辑脚本，请放在下方 -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> -->
     <script>
-        // 在这里写你原本初始化地图、连接 Supabase 并加载乐队数据的 JS 代码
-        // 例如：
-        // const map = L.map('map').setView([35.0, 105.0], 4);
-        // ... 你的其他地图逻辑
+        // ==========================================
+        // 1. 配置你的 Supabase 信息
+        // ==========================================
+        const SUPABASE_URL = '你的Supabase项目URL'; 
+        const SUPABASE_ANON_KEY = '你的Supabase匿名API密匙(anon key)';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 初始化地图（以中国中心为视口）
+        const map = L.map('map', {
+            zoomControl: false
+        }).setView([35.0, 105.0], 4);
+
+        // 加载暗黑科技感地图底图
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap & CARTO',
+            maxZoom: 19
+        }).addTo(map);
+
+        // 添加缩放控件到右下角
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        let markersMap = {}; // 存储地图上的 Marker 对象以便联动
+
+        // ==========================================
+        // 2. 从数据库加载数据并渲染
+        // ==========================================
+        async function loadBands() {
+            const { data: bands, error } = await supabaseClient
+                .from('bands')
+                .select('*');
+
+            if (error) {
+                console.error('获取乐队数据失败:', error);
+                return;
+            }
+
+            const bandListEl = document.getElementById('bandList');
+            bandListEl.innerHTML = '';
+
+            bands.forEach(band => {
+                if (!band.latitude || !band.longitude) return;
+
+                // 创建地图 Marker
+                const marker = L.marker([band.latitude, band.longitude]).addTo(map);
+
+                // 绑定点击弹窗（去掉了描述文字，缩小为圆形头像）
+                const popupHtml = `
+                    <div class="popup-content">
+                        <img src="${band.cover_url || 'https://picsum.photos/200/200'}" class="popup-avatar" alt="头像">
+                        <div class="popup-name">${band.name}</div>
+                        <div class="popup-style">${band.style || '独立音乐'}</div>
+                        <div class="popup-city">📍 ${band.city}</div>
+                    </div>
+                `;
+                marker.bindPopup(popupHtml);
+
+                markersMap[band.id] = marker;
+
+                // 渲染左侧列表项
+                const itemEl = document.createElement('div');
+                itemEl.className = 'band-item';
+                itemEl.innerHTML = `
+                    <img src="${band.cover_url || 'https://picsum.photos/200/200'}" class="band-item-avatar" alt="">
+                    <div class="band-item-info">
+                        <div class="band-item-name">${band.name}</div>
+                        <div class="band-item-meta">${band.city} · ${band.style || ''}</div>
+                    </div>
+                `;
+
+                // 左侧点击联动地图锚定与打开弹窗
+                itemEl.addEventListener('click', () => {
+                    // 移除其他选中态
+                    document.querySelectorAll('.band-item').forEach(el => el.classList.remove('active'));
+                    itemEl.classList.add('active');
+
+                    // 地图平滑飞向目标坐标并打开弹窗
+                    map.flyTo([band.latitude, band.longitude], 10, {
+                        animate: true,
+                        duration: 1.2
+                    });
+                    marker.openPopup();
+                });
+
+                bandListEl.appendChild(itemEl);
+            });
+        }
+
+        loadBands();
     </script>
 </body>
 </html>
