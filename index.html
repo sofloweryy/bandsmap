@@ -77,13 +77,15 @@
         }
         .detail-card.show { display: block; }
         
+        /* 融入整体色调的优雅关闭按钮 */
         .close-btn {
-            position: absolute; top: 12px; right: 14px;
-            background: transparent; border: none; color: var(--text-secondary);
-            font-size: 14px; cursor: pointer; padding: 4px;
-            transition: color 0.2s;
+            position: absolute; top: 10px; right: 12px;
+            background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); 
+            color: var(--text-secondary); width: 24px; height: 24px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; cursor: pointer; transition: all 0.2s;
         }
-        .close-btn:hover { color: #fff; }
+        .close-btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
 
         .card-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin: 0 auto 10px auto; border: 2px solid #38bdf8; display: block; }
         .card-name { font-size: 16px; font-weight: 700; color: #facc15; margin-bottom: 6px; }
@@ -125,7 +127,7 @@
         <div class="map-container">
             <div id="chinaMap"></div>
             <div class="detail-card" id="detailCard">
-                <button class="close-btn" onclick="closeDetailCard()">❌</button>
+                <button class="close-btn" onclick="closeDetailCard()">✕</button>
                 <div id="cardContent"></div>
             </div>
         </div>
@@ -164,9 +166,8 @@
             allBands = data || [];
             renderUI(allBands);
             if (allBands.length > 0) {
-                // 如果当前有选中的乐队，保持选中，否则选第一名
                 const target = currentSelectedBand ? allBands.find(b => b.id === currentSelectedBand.id) || allBands[0] : allBands[0];
-                selectBand(target);
+                selectBand(target, false); // 初始加载不重复触发平移
             }
         }
 
@@ -176,7 +177,7 @@
             renderMap(bands);
         }
 
-        function selectBand(band) {
+        function selectBand(band, panToCoord = true) {
             currentSelectedBand = band;
             
             document.querySelectorAll('.band-item').forEach(el => {
@@ -195,12 +196,26 @@
                 <button class="like-btn" onclick="handleLike(${band.id})">送心心💖</button>
                 <div class="like-count-display">获得: <span id="like-count-${band.id}">${band.likes || 0}</span> 💖</div>
             `;
+
+            // 重新渲染地图以更新选中点的异化样式，并可选择性平移聚焦
+            renderMap(allBands);
+
+            if (panToCoord && band.longitude && band.latitude) {
+                // 平移地图中心到该坐标，并适当放大聚焦
+                myChart.setOption({
+                    geo: {
+                        center: [band.longitude, band.latitude],
+                        zoom: 1.6
+                    }
+                });
+            }
         }
 
         window.closeDetailCard = function() {
             document.getElementById('detailCard').classList.remove('show');
             currentSelectedBand = null;
             document.querySelectorAll('.band-item').forEach(el => el.classList.remove('active'));
+            renderMap(allBands); // 恢复普通地图样式
         }
 
         function renderList(bands) {
@@ -220,25 +235,37 @@
                     <div class="band-item-likes">💖 ${band.likes || 0}</div>
                 `;
                 item.addEventListener('click', () => {
-                    selectBand(band);
+                    selectBand(band, true);
                 });
                 listEl.appendChild(item);
             });
         }
 
         function renderMap(bands) {
-            const scatterData = bands.map(band => ({
-                name: band.name,
-                value: [band.longitude, band.latitude, band.likes || 0],
-                bandInfo: band
-            }));
+            // 普通点数据与当前选中点数据分离，实现视觉异化
+            const normalData = [];
+            const selectedData = [];
+
+            bands.forEach(band => {
+                const item = {
+                    name: band.name,
+                    value: [band.longitude, band.latitude, band.likes || 0],
+                    bandInfo: band
+                };
+                if (currentSelectedBand && currentSelectedBand.id === band.id) {
+                    selectedData.push(item);
+                } else {
+                    normalData.push(item);
+                }
+            });
 
             const option = {
                 backgroundColor: '#090d16',
                 geo: {
                     map: 'china',
                     roam: true,
-                    zoom: 1.2,
+                    zoom: myChart.getOption() && myChart.getOption().geo ? myChart.getOption().geo[0].zoom : 1.2,
+                    center: myChart.getOption() && myChart.getOption().geo ? myChart.getOption().geo[0].center : undefined,
                     itemStyle: {
                         areaColor: '#1e293b',
                         borderColor: '#475569',
@@ -248,29 +275,48 @@
                         itemStyle: { areaColor: '#334155' }
                     }
                 },
-                series: [{
-                    type: 'scatter',
-                    coordinateSystem: 'geo',
-                    data: scatterData,
-                    symbolSize: function (val) {
-                        return Math.min(10 + Math.sqrt(val[2]) * 2, 22);
+                series: [
+                    {
+                        name: 'normal',
+                        type: 'scatter',
+                        coordinateSystem: 'geo',
+                        data: normalData,
+                        symbolSize: function (val) {
+                            return Math.min(10 + Math.sqrt(val[2]) * 2, 20);
+                        },
+                        itemStyle: {
+                            color: '#38bdf8',
+                            shadowBlur: 6,
+                            shadowColor: '#38bdf8'
+                        }
                     },
-                    itemStyle: {
-                        color: '#38bdf8',
-                        shadowBlur: 8,
-                        shadowColor: '#38bdf8'
-                    },
-                    emphasis: {
-                        itemStyle: { color: '#facc15', borderColor: '#fff', borderWidth: 2 }
+                    {
+                        name: 'selected',
+                        type: 'effectScatter', // 带有涟漪/呼吸发光特效的异化点
+                        coordinateSystem: 'geo',
+                        data: selectedData,
+                        symbolSize: 18,
+                        showEffectOn: 'render',
+                        rippleEffect: {
+                            brushType: 'stroke',
+                            scale: 3.5,
+                            period: 2
+                        },
+                        itemStyle: {
+                            color: '#facc15', // 醒目亮黄色
+                            shadowBlur: 15,
+                            shadowColor: '#facc15'
+                        },
+                        zlevel: 10
                     }
-                }]
+                ]
             };
             myChart.setOption(option);
         }
 
         myChart.on('click', function (params) {
             if (params.data && params.data.bandInfo) {
-                selectBand(params.data.bandInfo);
+                selectBand(params.data.bandInfo, true);
             }
         });
 
@@ -287,7 +333,6 @@
             const band = allBands.find(b => b.id === bandId);
             const newLikes = (band.likes || 0) + 1;
             
-            // 同步更新到 Supabase 数据库
             const { error } = await supabaseClient.from('bands').update({ likes: newLikes }).eq('id', bandId);
             if (error) {
                 console.error("更新数据库失败:", error);
