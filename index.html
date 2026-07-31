@@ -77,7 +77,6 @@
         }
         .detail-card.show { display: block; }
         
-        /* 融入整体色调的优雅关闭按钮 */
         .close-btn {
             position: absolute; top: 10px; right: 12px;
             background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); 
@@ -120,7 +119,7 @@
             <div class="search-box-container">
                 <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜索乐队、城市、风格...">
             </div>
-            <div class="rank-section-title">🔥 获赞热度排行榜</div>
+            <div class="rank-section-title">今天你送心心了吗😊</div>
             <div class="band-list" id="bandList"></div>
         </div>
         
@@ -167,7 +166,7 @@
             renderUI(allBands);
             if (allBands.length > 0) {
                 const target = currentSelectedBand ? allBands.find(b => b.id === currentSelectedBand.id) || allBands[0] : allBands[0];
-                selectBand(target, false); // 初始加载不重复触发平移
+                selectBand(target, false);
             }
         }
 
@@ -197,11 +196,9 @@
                 <div class="like-count-display">获得: <span id="like-count-${band.id}">${band.likes || 0}</span> 💖</div>
             `;
 
-            // 重新渲染地图以更新选中点的异化样式，并可选择性平移聚焦
             renderMap(allBands);
 
             if (panToCoord && band.longitude && band.latitude) {
-                // 平移地图中心到该坐标，并适当放大聚焦
                 myChart.setOption({
                     geo: {
                         center: [band.longitude, band.latitude],
@@ -215,7 +212,7 @@
             document.getElementById('detailCard').classList.remove('show');
             currentSelectedBand = null;
             document.querySelectorAll('.band-item').forEach(el => el.classList.remove('active'));
-            renderMap(allBands); // 恢复普通地图样式
+            renderMap(allBands);
         }
 
         function renderList(bands) {
@@ -242,7 +239,6 @@
         }
 
         function renderMap(bands) {
-            // 普通点数据与当前选中点数据分离，实现视觉异化
             const normalData = [];
             const selectedData = [];
 
@@ -292,7 +288,7 @@
                     },
                     {
                         name: 'selected',
-                        type: 'effectScatter', // 带有涟漪/呼吸发光特效的异化点
+                        type: 'effectScatter',
                         coordinateSystem: 'geo',
                         data: selectedData,
                         symbolSize: 18,
@@ -303,7 +299,7 @@
                             period: 2
                         },
                         itemStyle: {
-                            color: '#facc15', // 醒目亮黄色
+                            color: '#facc15',
                             shadowBlur: 15,
                             shadowColor: '#facc15'
                         },
