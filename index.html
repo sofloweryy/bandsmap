@@ -2,243 +2,220 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>中国独立乐队地图</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>独立乐队地图</title>
     <style>
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        :root {
+            --bg-color: #090d16;
+            --panel-bg: rgba(20, 27, 45, 0.75);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-glow: rgba(56, 189, 248, 0.3);
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: var(--text-main);
+        }
+
+        /* 顶部导航条样式 */
+        .header-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            background: linear-gradient(to bottom, rgba(9, 13, 22, 0.9), rgba(9, 13, 22, 0.4));
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .site-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, #38bdf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* 底部标语/版权样式 */
+        .footer-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 16px;
+            background: rgba(9, 13, 22, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            border-top: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .footer-bar span {
+            color: #38bdf8;
+            font-weight: 500;
+            margin-left: 4px;
+        }
+
+        /* 弹窗高级感玻璃拟态微动效设计 */
+        .band-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: 88%;
+            max-width: 320px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 20px var(--accent-glow);
+            z-index: 1000;
+            animation: popupFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes popupFadeIn {
+            to {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 关闭按钮交互 */
+        .close-btn {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            color: var(--text-secondary);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            transform: rotate(90deg);
+        }
+
+        /* 头像样式：完美的圆形头像并带有流光边框 */
+        .band-avatar {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+            margin: 0 auto 14px auto;
+            border: 2px solid #38bdf8;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+
+        /* 乐队头部信息 */
+        .band-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .band-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #facc15;
+            margin: 0 0 8px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .band-style {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(192, 132, 252, 0.15));
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: #e2e8f0;
+            font-size: 11px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        /* 城市样式 */
+        .band-city {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 h-screen flex flex-col overflow-hidden">
+<body>
 
-    <header class="h-16 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between shrink-0">
-        <div class="flex items-center space-x-3">
-            <span class="text-2xl">🎸</span>
-            <h1 class="text-xl font-bold tracking-wider bg-gradient-to-r from-amber-400 to-rose-500 bg-clip-text text-transparent">
-                全国独立乐队互动地图
-            </h1>
-        </div>
-        <div class="text-xs text-slate-400">
-            数据由 Supabase 强力驱动 | 探索中国地下与独立音乐场景
-        </div>
+    <!-- 顶部导航条 -->
+    <header class="header-bar">
+        <div class="site-title">🎸 独立乐队地图</div>
     </header>
 
-    <div class="flex-1 flex overflow-hidden">
+    <!-- 地图或主容器区域占位（实际按你原有的地图SDK初始化即可） -->
+    <div id="map-container" style="width: 100%; height: 100%;"></div>
+
+    <!-- 弹窗示例（供渲染参考） -->
+    <div class="band-popup">
+        <button class="close-btn">&times;</button>
         
-        <aside class="w-80 bg-slate-900/80 border-r border-slate-800 flex flex-col shrink-0">
-            <div class="p-4 border-b border-slate-800">
-                <input type="text" id="searchInput" placeholder="搜索乐队名称或城市..." 
-                    class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
-            </div>
-            <div id="bandList" class="flex-1 overflow-y-auto p-4 space-y-3">
-                <div class="text-center text-slate-500 py-10 text-sm">正在加载乐队数据...</div>
-            </div>
-        </aside>
-
-        <main class="flex-1 relative bg-slate-950">
-            <div id="mapContainer" class="w-full h-full"></div>
-            
-            <div id="bandCard" class="absolute top-6 right-6 w-80 bg-slate-900/95 border border-slate-700 rounded-xl p-5 shadow-2xl backdrop-blur-md hidden transition-all duration-300">
-                <button onclick="closeCard()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-sm font-bold">✕</button>
-                <img id="cardImage" src="" alt="" class="w-full h-40 object-cover rounded-lg mb-4 bg-slate-800">
-                <div class="flex items-center justify-between mb-2">
-                    <h2 id="cardName" class="text-lg font-bold text-amber-400">乐队名称</h2>
-                    <span id="cardStyle" class="text-xs bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full border border-rose-500/30">风格</span>
-                </div>
-                <p id="cardCity" class="text-xs text-slate-400 mb-3">📍 城市</p>
-                <p id="cardDesc" class="text-sm text-slate-300 leading-relaxed max-h-36 overflow-y-auto">乐队简介...</p>
-            </div>
-        </main>
-
+        <!-- 精致圆形头像 -->
+        <img src="https://picsum.photos/id/1082/200/200" alt="乐队头像" class="band-avatar">
+        
+        <div class="band-header">
+            <h2 class="band-name">痛仰</h2>
+            <span class="band-style">另类摇滚 / 硬摇滚</span>
+        </div>
+        
+        <p class="band-city">📍 北京</p>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://hrgzmwtgpacdxifcevwy.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'sb_publishable_4XcXlLh77BtvmIajOGbpPA_T7d6b9fu'; 
-        
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <!-- 底部版权标语栏 -->
+    <footer class="footer-bar">
+        仅供娱乐｜欢迎乐迷进群交流｜联系美丽且智慧的开发者：<span>vildbloom</span>
+    </footer>
 
-        let allBands = []; 
-        let myChart = null; 
-
-        function initMap() {
-            const chartDom = document.getElementById('mapContainer');
-            myChart = echarts.init(chartDom);
-            
-            const option = {
-                backgroundColor: 'transparent',
-                tooltip: {
-                    trigger: 'item',
-                    formatter: function (params) {
-                        if (params.seriesType === 'scatter') {
-                            return `<b>${params.data.name}</b><br/>风格: ${params.data.style}<br/>城市: ${params.data.city}`;
-                        }
-                    }
-                },
-                geo: {
-                    map: 'china',
-                    roam: true,
-                    zoom: 1.2,
-                    scaleLimit: { min: 0.8, max: 10 },
-                    itemStyle: {
-                        areaColor: '#1e293b', 
-                        borderColor: '#334155',
-                        borderWidth: 1
-                    },
-                    emphasis: {
-                        itemStyle: { areaColor: '#334155' },
-                        label: { show: false }
-                    }
-                },
-                series: [{
-                    name: '乐队分布',
-                    type: 'scatter',
-                    coordinateSystem: 'geo',
-                    data: [],
-                    symbolSize: 14,
-                    itemStyle: {
-                        color: '#f59e0b',
-                        shadowBlur: 10,
-                        shadowColor: 'rgba(245, 158, 11, 0.5)'
-                    },
-                    emphasis: {
-                        itemStyle: {
-                            color: '#ef4444',
-                            scale: 1.5
-                        }
-                    }
-                }]
-            };
-
-            myChart.setOption(option);
-
-            myChart.on('click', function (params) {
-                if (params.seriesType === 'scatter') {
-                    showBandDetail(params.data);
-                }
-            });
-
-            window.addEventListener('resize', () => myChart.resize());
-        }
-
-        async function fetchBands() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('bands')
-                    .select('*');
-
-                if (error) throw error;
-
-                // 适配经纬度坐标 [经度, 纬度]
-                allBands = data.map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    city: item.city,
-                    style: item.style,
-                    description: item.description,
-                    cover_url: item.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80',
-                    value: [item.longitude, item.latitude] 
-                }));
-
-                renderList(allBands);
-                updateMapData(allBands);
-
-            } catch (err) {
-                console.error('获取乐队数据失败:', err);
-                document.getElementById('bandList').innerHTML = `<div class="text-center text-rose-500 text-xs p-4">加载失败，请检查 Supabase 的 bands 表。</div>`;
-            }
-        }
-
-        function updateMapData(bands) {
-            const formattedData = bands.map(b => ({
-                name: b.name, 
-                city: b.city,
-                style: b.style,
-                description: b.description,
-                cover_url: b.cover_url,
-                value: b.value // 传入 [经度, 纬度]
-            }));
-
-            myChart.setOption({
-                series: [{
-                    data: formattedData
-                }]
-            });
-        }
-
-        function renderList(bands) {
-            const listContainer = document.getElementById('bandList');
-            if (bands.length === 0) {
-                listContainer.innerHTML = `<div class="text-center text-slate-500 py-10 text-sm">暂无匹配的乐队</div>`;
-                return;
-            }
-
-            listContainer.innerHTML = bands.map(band => `
-                <div onclick="selectBand('${band.name}')" class="bg-slate-950/60 border border-slate-800 hover:border-amber-500/50 rounded-lg p-3 cursor-pointer transition-all group">
-                    <div class="flex items-center justify-between mb-1">
-                        <h3 class="font-bold text-sm text-slate-200 group-hover:text-amber-400">${band.name}</h3>
-                        <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded">${band.style}</span>
-                    </div>
-                    <p class="text-xs text-slate-400">📍 ${band.city}</p>
-                </div>
-            `).join('');
-        }
-
-        // 核心：点击左侧乐队，地图自动锚定并平移过去
-        function selectBand(bandName) {
-            const band = allBands.find(b => b.name === bandName);
-            if (!band) return;
-
-            showBandDetail(band);
-
-            // 让 ECharts 地图平移(center)并放大(zoom)到该经纬度
-            myChart.setOption({
-                geo: {
-                    center: band.value, // 传入 [经度, 纬度]
-                    zoom: 4             // 放大倍数，数字越大推得越近
-                }
-            });
-        }
-
-        function showBandDetail(band) {
-            document.getElementById('cardImage').src = band.cover_url;
-            document.getElementById('cardName').textContent = band.name;
-            document.getElementById('cardStyle').textContent = band.style;
-            document.getElementById('cardCity').textContent = `📍 ${band.city}`;
-            document.getElementById('cardDesc').textContent = band.description || '暂无详细介绍...';
-            document.getElementById('bandCard').classList.remove('hidden');
-        }
-
-        function closeCard() {
-            document.getElementById('bandCard').classList.add('hidden');
-            // 关闭卡片时恢复默认全国视角
-            myChart.setOption({
-                geo: {
-                    zoom: 1.2,
-                    center: null
-                }
-            });
-        }
-
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const keyword = e.target.value.toLowerCase();
-            const filtered = allBands.filter(b => 
-                b.name.toLowerCase().includes(keyword) || 
-                b.city.toLowerCase().includes(keyword) ||
-                b.style.toLowerCase().includes(keyword)
-            );
-            renderList(filtered);
-            updateMapData(filtered);
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            initMap();
-            fetchBands();
-        });
-    </script>
 </body>
 </html>
