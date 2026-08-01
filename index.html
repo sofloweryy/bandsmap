@@ -46,7 +46,6 @@
             flex-direction: column;
             gap: 12px;
         }
-        /* 重塑的高颜值标题 */
         .sidebar-title-row {
             display: flex;
             align-items: center;
@@ -72,7 +71,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        /* 顶部剩余小心心胶囊 */
         .global-heart-badge {
             background: rgba(30, 41, 59, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -91,7 +89,6 @@
             font-weight: 700;
         }
 
-        /* 搜索框样式 */
         .search-box {
             width: 100%;
             background: rgba(30, 41, 59, 0.5);
@@ -167,13 +164,11 @@
             fill: #fb7185;
         }
 
-        /* 中间主地图容器 */
         #map-container {
             flex: 1;
             height: 100vh;
         }
 
-        /* 底部版权与作者信息栏 */
         .footer-banner {
             position: absolute;
             bottom: 12px;
@@ -191,7 +186,6 @@
             pointer-events: none;
         }
 
-        /* 悬浮面板卡片 */
         .band-card {
             position: absolute;
             top: 24px;
@@ -255,7 +249,6 @@
             color: #94a3b8;
         }
 
-        /* 点赞按钮（更新为双爱心 ❤️❤️） */
         .like-btn {
             background: linear-gradient(135deg, #f43f5e, #e11d48);
             color: white;
@@ -284,14 +277,6 @@
             box-shadow: none;
         }
 
-        /* 移动端菜单控制按钮默认隐藏（PC不显示） */
-        .mobile-toggle-btn {
-            display: none;
-        }
-
-        /* ==========================================
-           响应式移动端适配优化 (Mobile Adaptation)
-           ========================================== */
         @media (max-width: 768px) {
             body {
                 flex-direction: column-reverse;
@@ -312,7 +297,6 @@
             .sidebar.open {
                 transform: translateY(0);
             }
-            /* 手机端可点击的抽屉把手/标题栏 */
             .sidebar-header {
                 cursor: pointer;
                 padding: 14px 16px;
@@ -333,7 +317,7 @@
                 left: 0;
             }
             .footer-banner {
-                display: none; /* 手机端隐藏版权栏以节省空间 */
+                display: none;
             }
             .band-card {
                 top: 16px;
@@ -343,7 +327,6 @@
             }
         }
 
-        /* 滚动条美化 */
         ::-webkit-scrollbar {
             width: 4px;
             height: 4px;
@@ -356,7 +339,6 @@
 </head>
 <body>
 
-    <!-- 左侧窄版/抽屉乐队列表 -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header" onclick="toggleMobileSidebar()">
             <div class="mobile-handle-bar"></div>
@@ -364,27 +346,20 @@
                 <div class="icon-badge">🎸</div>
                 <span>独立音乐图鉴</span>
             </div>
-            <!-- 顶部剩余小心心（每日200个） -->
             <div class="global-heart-badge">
                 今日剩余小心心：<span id="remainingHearts">200</span> / 200
             </div>
-            <!-- 搜索框 -->
             <input type="text" id="searchInput" class="search-box" placeholder="🔍 搜索乐队、地区、风格..." oninput="handleSearch()" onclick="event.stopPropagation()">
         </div>
-        <div class="band-list" id="bandList">
-            <!-- 动态渲染 -->
-        </div>
+        <div class="band-list" id="bandList"></div>
     </div>
 
-    <!-- 中间地图区域 -->
     <div id="map-container"></div>
 
-    <!-- 底部版权和交流提示 -->
     <div class="footer-banner">
         仅供娱乐切勿较真儿 | 欢迎乐迷交流指正 ｜ 联系美丽且智慧的开发者 公众号：摘花花 ｜ 邮箱：zhaihuahua1701@gmail.com
     </div>
 
-    <!-- 右上角极简乐队信息面板（默认隐藏） -->
     <div class="band-card" id="bandCard">
         <div class="card-header">
             <img class="card-avatar" id="cardAvatar" src="https://picsum.photos/200/200?random=1" alt="头像">
@@ -402,9 +377,6 @@
     </div>
 
     <script>
-        // ==========================================
-        // 1. Supabase 配置
-        // ==========================================
         const SUPABASE_URL = 'https://hrgzmwtgpacdxifcevwy.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_4XcXlLh77BtvmIajOGbpPA_T7d6b9fu';
         
@@ -414,7 +386,6 @@
         let currentActiveId = null;
         var myChart = null;
 
-        // 每天 200 个小心心本地配额管理
         const MAX_HEARTS = 200;
         let remainingHearts = MAX_HEARTS;
         const todayKey = 'band_map_hearts_200_' + new Date().toDateString();
@@ -423,7 +394,6 @@
             remainingHearts = parseInt(savedHearts, 10);
         }
 
-        // 移动端侧边栏抽屉开关控制
         function toggleMobileSidebar() {
             if (window.innerWidth <= 768) {
                 const sidebar = document.getElementById('sidebar');
@@ -431,58 +401,67 @@
             }
         }
 
-        // 扩展的中国主要城市经纬度对照表
+        // 严格校准全国主要城市与省份标准经纬度中心点（确保在地图边界内部）
         const cityCoords = {
-            '西安': [108.93, 34.34],
-            '榆林': [109.74, 38.29],
-            '宝鸡': [107.15, 34.38],
-            '咸阳': [108.70, 34.33],
-            '汉中': [107.02, 33.07],
-            '延安': [109.49, 36.59],
-            '广州': [113.26, 23.12],
-            '深圳': [114.05, 22.54],
-            '珠海': [113.57, 22.27],
-            '汕头': [116.68, 23.35],
-            '佛山': [113.12, 23.02],
-            '东莞': [113.75, 23.02],
-            '海丰': [115.32, 22.96],
-            '成都': [104.06, 30.57],
-            '绵阳': [104.73, 31.46],
-            '乐山': [103.76, 29.55],
-            '自贡': [104.77, 29.34],
-            '宜宾': [104.61, 28.77],
-            '北京': [116.40, 39.90],
-            '上海': [121.47, 31.23],
-            '天津': [117.20, 39.08],
-            '重庆': [106.55, 29.56],
-            '台北': [121.50, 25.03],
-            '高雄': [120.31, 22.62],
-            '台中': [120.67, 24.14],
-            '宜兰': [121.76, 24.75],
-            '呼和浩特': [111.75, 40.84],
-            '包头': [109.84, 40.65],
-            '杭州': [120.15, 30.27],
-            '宁波': [121.56, 29.86],
-            '温州': [120.69, 27.99],
-            '南京': [118.79, 32.06],
-            '苏州': [120.58, 31.29],
-            '武汉': [114.30, 30.59],
-            '长沙': [112.93, 28.22],
-            '青岛': [120.38, 36.06],
-            '济南': [117.00, 36.65],
-            '厦门': [118.08, 24.47],
-            '福州': [119.30, 26.08],
-            '昆明': [102.71, 25.04],
-            '贵阳': [106.63, 26.65],
-            '兰州': [103.82, 36.06],
-            '哈尔滨': [126.63, 45.75],
-            '沈阳': [123.43, 41.80],
-            '长春': [125.32, 43.81]
+            '乌鲁木齐': [87.617733, 43.792818],
+            '新疆': [87.617733, 43.792818],
+            '西安': [108.93984, 34.34127],
+            '陕西': [108.93984, 34.34127],
+            '榆林': [109.74119, 38.29012],
+            '宝鸡': [107.15426, 34.37736],
+            '咸阳': [108.70519, 34.33156],
+            '汉中': [107.02863, 33.07823],
+            '延安': [109.49053, 36.59626],
+            '广州': [113.264434, 23.129162],
+            '广东': [113.264434, 23.129162],
+            '深圳': [114.057868, 22.543099],
+            '珠海': [113.57671, 22.27459],
+            '汕头': [116.68541, 23.35391],
+            '佛山': [113.122717, 23.028762],
+            '东莞': [113.75179, 23.02067],
+            '成都': [104.065735, 30.572269],
+            '四川': [104.065735, 30.572269],
+            '绵阳': [104.73295, 31.46749],
+            '乐山': [103.76632, 29.55395],
+            '北京': [116.405285, 39.904989],
+            '上海': [121.472644, 31.231706],
+            '天津': [117.190182, 39.125596],
+            '重庆': [106.504962, 29.533155],
+            '台北': [121.5654, 25.033],
+            '台湾': [120.9605, 23.6978],
+            '呼和浩特': [111.75109, 40.8418],
+            '内蒙古': [111.75109, 40.8418],
+            '杭州': [120.153576, 30.287459],
+            '浙江': [120.153576, 30.287459],
+            '宁波': [121.54967, 29.86834],
+            '温州': [120.69936, 27.99417],
+            '南京': [118.796877, 32.060255],
+            '江苏': [118.796877, 32.060255],
+            '苏州': [120.585315, 31.298886],
+            '武汉': [114.298572, 30.584355],
+            '湖北': [114.298572, 30.584355],
+            '长沙': [112.938877, 28.228209],
+            '湖南': [112.938877, 28.228209],
+            '青岛': [120.384428, 36.066227],
+            '山东': [117.000923, 36.675807],
+            '济南': [117.000923, 36.675807],
+            '厦门': [118.08948, 24.47983],
+            '福建': [119.306239, 26.075302],
+            '福州': [119.306239, 26.075302],
+            '昆明': [102.712251, 25.040609],
+            '云南': [102.712251, 25.040609],
+            '贵阳': [106.63024, 26.64766],
+            '贵州': [106.63024, 26.64766],
+            '兰州': [103.823557, 36.058039],
+            '甘肃': [103.823557, 36.058039],
+            '哈尔滨': [126.642464, 45.756967],
+            '黑龙江': [126.642464, 45.756967],
+            '沈阳': [123.429096, 41.796767],
+            '辽宁': [123.429096, 41.796767],
+            '长春': [125.3245, 43.81707],
+            '吉林': [125.3245, 43.81707]
         };
 
-        // ==========================================
-        // 2. 从 Supabase 加载数据并处理
-        // ==========================================
         async function fetchBandsFromSupabase() {
             try {
                 const { data, error } = await _supabase.from('bands').select('*');
@@ -503,12 +482,14 @@
             }
         }
 
-        // 匹配经纬度并防重叠
+        // 优化坐标分布：使用分类螺旋分散算法，防止“团成蛋”
         function processCoordinates(list) {
-            const coordMap = {};
-            return list.map(band => {
-                let lng = 104.06;
-                let lat = 30.57;
+            // 先按城市/省份归类统计
+            const locationGroups = {};
+            
+            list.forEach(band => {
+                let lng = 104.0657;
+                let lat = 30.5723;
 
                 if (band.lng && !isNaN(band.lng) && band.lat && !isNaN(band.lat)) {
                     lng = Number(band.lng);
@@ -521,26 +502,49 @@
                     lat = cityCoords[band.province][1];
                 }
 
-                const key = `${lng.toFixed(2)}_${lat.toFixed(2)}`;
-                if (coordMap[key] === undefined) {
-                    coordMap[key] = 0;
-                } else {
-                    coordMap[key]++;
-                    const angle = coordMap[key] * 137.5 * (Math.PI / 180); 
-                    const radius = 0.08 * Math.sqrt(coordMap[key]);
-                    lng += radius * Math.cos(angle);
-                    lat += radius * Math.sin(angle);
+                const groupKey = band.city || band.province || 'default';
+                if (!locationGroups[groupKey]) {
+                    locationGroups[groupKey] = { baseLng: lng, baseLat: lat, items: [] };
                 }
-
-                return { ...band, lng, lat, likes: band.likes || 0 };
+                locationGroups[groupKey].items.push(band);
             });
+
+            const processedList = [];
+
+            // 针对每个城市组进行螺旋均匀散开布局
+            Object.keys(locationGroups).forEach(key => {
+                const group = locationGroups[key];
+                const count = group.items.length;
+
+                group.items.forEach((band, index) => {
+                    let finalLng = group.baseLng;
+                    let finalLat = group.baseLat;
+
+                    if (index > 0) {
+                        // 黄金角螺旋扩散 (Golden Angle Spiral)
+                        const angle = index * 137.5 * (Math.PI / 180);
+                        // 随着数量增加适度扩大半径，保持组内清晰可见又不至于飘出省外
+                        const radius = 0.35 * Math.sqrt(index); 
+                        finalLng += radius * Math.cos(angle);
+                        finalLat += (radius * 0.75) * Math.sin(angle);
+                    }
+
+                    processedList.push({
+                        ...band,
+                        lng: finalLng,
+                        lat: finalLat,
+                        likes: band.likes || 0
+                    });
+                });
+            });
+
+            return processedList;
         }
 
         function handleSearch() {
             sortAndRenderSidebar();
         }
 
-        // 按点赞总数排序并渲染左侧列表
         function sortAndRenderSidebar() {
             bandDatabase.sort((a, b) => b.likes - a.likes);
 
@@ -590,7 +594,6 @@
                             name: band.province
                         });
                     }
-                    // 在手机上点击列表项后自动收起抽屉以便查看地图
                     if (window.innerWidth <= 768) {
                         document.getElementById('sidebar').classList.remove('open');
                     }
@@ -599,7 +602,6 @@
             });
         }
 
-        // 选中乐队后展示右侧卡片
         function showCardContent(band) {
             const card = document.getElementById('bandCard');
             card.style.display = 'flex';
@@ -627,7 +629,6 @@
             }
         }
 
-        // 点赞交互
         document.getElementById('likeBtn').onclick = async () => {
             if (remainingHearts <= 0) return;
 
@@ -653,9 +654,6 @@
             }
         };
 
-        // ==========================================
-        // 3. 初始化 ECharts 地图
-        // ==========================================
         function initMap(data) {
             myChart = echarts.init(document.getElementById('map-container'));
 
