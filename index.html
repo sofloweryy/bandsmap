@@ -51,7 +51,7 @@
             font-weight: 700;
             color: #f8fafc;
         }
-        /* 顶部剩余小心心胶囊替代原热力排序 */
+        /* 顶部剩余小心心胶囊 */
         .global-heart-badge {
             background: rgba(15, 23, 42, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.12);
@@ -170,7 +170,7 @@
             pointer-events: none;
         }
 
-        /* 右上角乐队详细浮窗（默认隐藏） */
+        /* 右上角乐队信息面板（默认隐藏） */
         .band-card {
             position: absolute;
             top: 24px;
@@ -267,11 +267,11 @@
             <div class="sidebar-title-row">
                 <span>🎸 乐队图鉴</span>
             </div>
-            <!-- 顶部剩余小心心替代原热力排序 -->
+            <!-- 顶部剩余小心心 -->
             <div class="global-heart-badge">
                 今日剩余小心心：<span id="remainingHearts">100</span> / 100
             </div>
-            <!-- 新增搜索框：支持搜名字、地区、风格 -->
+            <!-- 搜索框：支持搜名字、地区、风格 -->
             <input type="text" id="searchInput" class="search-box" placeholder="🔍 搜索乐队、地区、风格..." oninput="handleSearch()">
         </div>
         <div class="band-list" id="bandList">
@@ -403,19 +403,16 @@
             });
         }
 
-        // 搜索处理函数：支持按名称、省份/城市、风格实时过滤
         function handleSearch() {
             sortAndRenderSidebar();
         }
 
-        // 按点赞总数排序并渲染左侧列表（支持过滤、前10名展示小心心）
+        // 按点赞总数排序并渲染左侧列表
         function sortAndRenderSidebar() {
-            // 全局数据始终按点赞降序排
             bandDatabase.sort((a, b) => b.likes - a.likes);
 
             const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
             
-            // 过滤匹配项
             const filteredList = bandDatabase.filter(band => {
                 if (!keyword) return true;
                 const nameMatch = band.name && band.name.toLowerCase().includes(keyword);
@@ -429,13 +426,11 @@
             listContainer.innerHTML = '';
             
             filteredList.forEach(band => {
-                // 计算该乐队在完整热力榜单中的真实全局排名位置（从0开始算索引）
                 const globalIndex = bandDatabase.findIndex(b => b.id === band.id);
 
                 const item = document.createElement('div');
                 item.className = `band-list-item ${band.id === currentActiveId ? 'active' : ''}`;
                 
-                // 仅排名前 10 名（globalIndex < 10）展示小心心数量
                 let likesHTML = '';
                 if (globalIndex < 10) {
                     likesHTML = `
@@ -455,12 +450,11 @@
                     sortAndRenderSidebar();
                     showCardContent(band);
                     
-                    // 地图同步平移或高亮
-                    if (myChart) {
+                    // 地图高亮对应的省份区域
+                    if (myChart && band.province) {
                         myChart.dispatchAction({
-                            type: 'showTip',
-                            seriesIndex: 1,
-                            dataIndex: bandDatabase.findIndex(b => b.id === band.id)
+                            type: 'highlight',
+                            name: band.province
                         });
                     }
                 };
@@ -536,10 +530,11 @@
                 tooltip: {
                     trigger: 'item',
                     formatter: function (params) {
+                        // 触碰到坐标时：只展示乐队名字
                         if (params.seriesType === 'effectScatter') {
-                            return `<b>${params.data.bandObj.name}</b><br/>📍 ${params.data.bandObj.province || ''}·${params.data.bandObj.city || ''}<br/>❤️ 小心心：${params.data.bandObj.likes}`;
+                            return `<b>${params.data.bandObj.name}</b>`;
                         }
-                        return params.name ? `<b>${params.name}</b> 音乐地图` : '';
+                        return '';
                     }
                 },
                 geo: {
@@ -618,12 +613,20 @@
 
             myChart.setOption(option);
 
+            // 地图点点击事件：点击坐标后高亮该乐队所在省份并弹出卡片
             myChart.on('click', function (params) {
                 if (params.seriesType === 'effectScatter' && params.data.bandObj) {
                     const targetBand = params.data.bandObj;
                     currentActiveId = targetBand.id;
                     sortAndRenderSidebar();
                     showCardContent(targetBand);
+
+                    if (targetBand.province) {
+                        myChart.dispatchAction({
+                            type: 'highlight',
+                            name: targetBand.province
+                        });
+                    }
                 }
             });
         }
