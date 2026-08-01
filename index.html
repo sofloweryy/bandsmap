@@ -170,22 +170,22 @@
             pointer-events: none;
         }
 
-        /* 右上角精致小巧的乐队信息面板（默认隐藏） */
+        /* 右上角极简轻量卡片（默认隐藏） */
         .band-card {
             position: absolute;
             top: 24px;
             right: 24px;
-            width: 260px;
+            width: 250px;
             background: rgba(15, 23, 42, 0.88);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px;
-            padding: 14px;
+            padding: 12px 14px;
             backdrop-filter: blur(12px);
             z-index: 20;
             box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
             display: none;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
         .card-header {
             display: flex;
@@ -193,8 +193,8 @@
             gap: 10px;
         }
         .card-avatar {
-            width: 42px;
-            height: 42px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid #3b82f6;
@@ -203,9 +203,10 @@
         }
         .card-meta {
             min-width: 0;
+            flex: 1;
         }
         .card-meta h3 {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             margin-bottom: 2px;
             color: #f8fafc;
@@ -213,34 +214,33 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .card-tag {
-            display: inline-block;
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-            padding: 1px 6px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 180px;
-        }
-        .card-desc {
-            font-size: 12px;
-            color: #94a3b8;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-            padding-top: 8px;
+        /* 标签栏：把风格和坐标放同一行，超长时自动滚动或省略 */
+        .card-info-row {
             display: flex;
             align-items: center;
             gap: 6px;
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        /* 更窄、更精致的点赞按钮 */
+        .card-tag {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-weight: 550;
+        }
+        .card-location {
+            color: #94a3b8;
+        }
+
+        /* 精致小巧的点赞按钮（送出小❤️❤️） */
         .like-btn {
             background: linear-gradient(135deg, #f43f5e, #e11d48);
             color: white;
             border: none;
-            padding: 7px 12px;
+            padding: 6px 10px;
             border-radius: 8px;
             font-weight: 600;
             font-size: 12px;
@@ -251,7 +251,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
+            gap: 4px;
         }
         .like-btn:hover {
             opacity: 0.95;
@@ -301,21 +301,20 @@
         仅供娱乐切勿较真儿 | 欢迎乐迷交流指正 ｜ 联系美丽且智慧的开发者 公众号：摘花花 ｜ 邮箱：zhaihuahua1701@gmail.com
     </div>
 
-    <!-- 右上角乐队信息面板（默认隐藏） -->
+    <!-- 右上角极简乐队信息面板（默认隐藏） -->
     <div class="band-card" id="bandCard">
         <div class="card-header">
             <img class="card-avatar" id="cardAvatar" src="https://picsum.photos/200/200?random=1" alt="头像">
             <div class="card-meta">
                 <h3 id="cardName">请选择乐队</h3>
-                <span class="card-tag" id="cardStyle">-</span>
+                <div class="card-info-row">
+                    <span class="card-tag" id="cardStyle">-</span>
+                    <span class="card-location" id="cardLocation">📍 -</span>
+                </div>
             </div>
         </div>
-        <div class="card-desc" id="cardDesc">
-            📍 请选择左侧列表或地图上的点
-        </div>
         <button class="like-btn" id="likeBtn">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            送出小心心 ( <span id="likeCount">0</span> )
+            送出小💖 ( <span id="likeCount">0</span> )
         </button>
     </div>
 
@@ -503,7 +502,7 @@
             });
         }
 
-        // 选中乐队后展示右侧卡片并填充内容（仅保留位置坐标，已移除简介）
+        // 选中乐队后展示右侧卡片（将风格和位置坐标紧凑排布在同一行）
         function showCardContent(band) {
             const card = document.getElementById('bandCard');
             card.style.display = 'flex';
@@ -512,7 +511,7 @@
             document.getElementById('cardStyle').innerText = band.style || '独立音乐';
             
             const locationStr = band.city ? `${band.province || ''}·${band.city}` : (band.province || '未知地区');
-            document.getElementById('cardDesc').innerHTML = `📍 ${locationStr}`;
+            document.getElementById('cardLocation').innerText = `📍 ${locationStr}`;
             
             document.getElementById('cardAvatar').src = band.avatar || `https://picsum.photos/200/200?random=${band.id}`;
             document.getElementById('likeCount').innerText = band.likes;
