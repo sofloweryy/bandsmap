@@ -2,11 +2,13 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>中国独立音乐与乐队地图</title>
+    <title>独立乐队图鉴</title>
     <!-- 引入 ECharts 核心库 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <!-- 引入中国地图标准 JSON 数据 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
+    <!-- 引入 Supabase 客户端 SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -35,7 +37,7 @@
             backdrop-filter: blur(10px);
         }
         .sidebar-title {
-            padding: 24px 20px 16px 20px;
+            padding: 22px 20px 14px 20px;
             font-size: 18px;
             font-weight: 700;
             letter-spacing: 0.5px;
@@ -45,7 +47,7 @@
             justify-content: space-between;
         }
         .sidebar-title span {
-            font-size: 13px;
+            font-size: 12px;
             color: #94a3b8;
             font-weight: normal;
         }
@@ -90,6 +92,24 @@
         #map-container {
             flex: 1;
             height: 100vh;
+        }
+
+        /* 底部版权与作者信息栏 */
+        .footer-banner {
+            position: absolute;
+            bottom: 12px;
+            left: 340px;
+            right: 24px;
+            background: rgba(13, 18, 30, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+            text-align: center;
+            backdrop-filter: blur(6px);
+            z-index: 15;
+            pointer-events: none;
         }
 
         /* 右上角乐队详细浮窗 */
@@ -160,7 +180,6 @@
         .like-btn:hover {
             opacity: 0.95;
             transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(244, 63, 94, 0.6);
         }
 
         /* 滚动条美化 */
@@ -171,9 +190,6 @@
             background: rgba(255, 255, 255, 0.15);
             border-radius: 3px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
     </style>
 </head>
 <body>
@@ -181,16 +197,21 @@
     <!-- 左侧乐队列表 -->
     <div class="sidebar">
         <div class="sidebar-title">
-            <span>🎸 音乐地图·乐队列表</span>
-            <span id="totalCount">共 0 支乐队</span>
+            <span>🎸 独立乐队图鉴</span>
+            <span id="totalCount">加载中...</span>
         </div>
         <div class="band-list" id="bandList">
-            <!-- 动态生成 100+ 乐队列表 -->
+            <!-- 动态从 Supabase 加载 -->
         </div>
     </div>
 
     <!-- 中间地图区域 -->
     <div id="map-container"></div>
+
+    <!-- 底部版权和交流提示 -->
+    <div class="footer-banner">
+        仅供娱乐切勿较真儿 | 欢迎乐迷交流指正 ｜ 联系美丽且智慧的开发者 公众号：摘花花 ｜ 邮箱：zhaihuahua1701@gmail.com
+    </div>
 
     <!-- 右上角乐队信息面板 -->
     <div class="band-card">
@@ -208,56 +229,72 @@
     </div>
 
     <script>
-        // 包含你的 100 多个完整乐队数据库
-        const bandDatabase = [
-            { id: 1, name: '声音玩具', city: '成都', province: '四川', style: '艺术摇滚 / 独立流行', lng: 104.06, lat: 30.57, desc: '细腻优雅的成都之声，现场极具张力与浪漫。', likes: 128 },
-            { id: 2, name: '马赛克', city: '成都', province: '四川', style: '独立流行 / 迪斯科', lng: 104.08, lat: 30.65, desc: '制造复古浪漫的舞曲派对，随性热烈。', likes: 95 },
-            { id: 3, name: '棱镜乐队', city: '宜兰', province: '台湾', style: '流行摇滚 / 独立流行', lng: 121.76, lat: 24.75, desc: '新一代独立流行代表，用温柔清澈治愈人心。', likes: 230 },
-            { id: 4, name: '万能青年旅店', city: '石家庄', province: '河北', style: '另类摇滚 / 民谣摇滚', lng: 114.48, lat: 38.03, desc: '时代的荒凉与诗意，一把小号吹响时代回音。', likes: 410 },
-            { id: 5, name: '新裤子', city: '北京', province: '北京', style: '朋克 / 新浪潮 / 电子', lng: 116.40, lat: 39.90, desc: '中国殿堂级新浪潮乐队，永远站在潮流前沿。', likes: 356 },
-            { id: 6, name: '痛仰乐队', city: '北京', province: '北京', style: '独立摇滚 / 朋克', lng: 116.46, lat: 39.92, desc: '在路上，永远年轻，永远热泪盈眶。', likes: 512 },
-            { id: 7, name: '五条人', city: '海丰', province: '广东', style: '民谣 / 另类摇滚', lng: 115.32, lat: 22.96, desc: '立足县城，走向世界，塑料感的美学。', likes: 489 },
-            { id: 8, name: '刺猬乐队', city: '北京', province: '北京', style: '独立摇滚 / 噪音流行', lng: 116.35, lat: 39.95, desc: '一代人总有一代人的长征，生命像一首炽热的歌。', likes: 310 },
-            { id: 9, name: '重塑雕像的权利', city: '北京', province: '北京', style: '后朋克 / 艺术摇滚', lng: 116.38, lat: 39.88, desc: '严谨、冷静且具有国际化审美的后朋克先锋。', likes: 275 },
-            { id: 10, name: '告五人', city: '宜兰', province: '台湾', style: '独立流行 / 宇宙民谣', lng: 121.74, lat: 24.77, desc: '带你坠入迷幻而又温柔的宇宙星河。', likes: 620 },
-            // ... (此处为你预留并完整生成了 100+ 乐队模拟或你原有数据的架构，可根据实际后端列表平铺替换)
-            // 如果你想直接由后端接口加载100个乐队，也可以直接用 fetch/axios 把数据动态 push 进这个数组
-        ];
-
-        // 自动批量生成补充达到 100 多个乐队（如果你的数组本身有100多条，直接用你的替换上面即可）
-        const cities = [
-            { name: '上海', province: '上海', lng: 121.47, lat: 31.23 },
-            { name: '广州', province: '广东', lng: 113.26, lat: 23.12 },
-            { name: '深圳', province: '广东', lng: 114.05, lat: 22.54 },
-            { name: '杭州', province: '浙江', lng: 120.15, lat: 30.27 },
-            { name: '武汉', province: '湖北', lng: 114.30, lat: 30.59 },
-            { name: '西安', province: '陕西', lng: 108.93, lat: 34.34 },
-            { name: '长沙', province: '湖南', lng: 112.93, lat: 28.22 },
-            { name: '成都', province: '四川', lng: 104.06, lat: 30.57 },
-            { name: '重庆', province: '重庆', lng: 106.55, lat: 29.56 },
-            { name: '南京', province: '江苏', lng: 118.79, lat: 32.06 }
-        ];
-        const styles = ['独立摇滚', '流行摇滚', '后朋克', '电子迷幻', '民谣', '金属', '爵士融合'];
+        // ==========================================
+        // 1. 配置你的 Supabase 凭证
+        // ==========================================
+        const SUPABASE_URL = '你的Supabase_URL'; 
+        const SUPABASE_ANON_KEY = '你的Supabase_ANON_KEY';
         
-        for (let i = 11; i <= 110; i++) {
-            const randCity = cities[i % cities.length];
-            bandDatabase.push({
-                id: i,
-                name: `独立音乐人/乐队 ${i}号`,
-                city: randCity.name,
-                province: randCity.province,
-                style: styles[i % styles.length],
-                lng: randCity.lng + (Math.random() - 0.5) * 0.5,
-                lat: randCity.lat + (Math.random() - 0.5) * 0.5,
-                desc: `这是第 ${i} 支活跃在${randCity.name}的优秀独立乐队，风格独特。`,
-                likes: Math.floor(Math.random() * 300) + 20
-            });
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let bandDatabase = [];
+        let currentActiveId = null;
+        var myChart = null;
+
+        // ==========================================
+        // 2. 从 Supabase 异步加载真实 100+ 乐队数据
+        // ==========================================
+        async function fetchBandsFromSupabase() {
+            try {
+                // 假设你的表名叫 bands，字段包含 id, name, city, province, style, lng, lat, desc, likes
+                const { data, error } = await _supabase.from('bands').select('*');
+                
+                if (error) {
+                    console.error('加载 Supabase 数据失败:', error);
+                    document.getElementById('totalCount').innerText = '加载失败';
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    bandDatabase = processCoordinatesOffset(data); // 核心：处理同坐标重叠点发散
+                    currentActiveId = bandDatabase[0].id;
+                    
+                    document.getElementById('totalCount').innerText = `共 ${bandDatabase.length} 支乐队`;
+                    renderSidebar();
+                    updateCardContent(bandDatabase[0]);
+                    initMap(bandDatabase);
+                } else {
+                    document.getElementById('totalCount').innerText = '暂无乐队数据';
+                }
+            } catch (err) {
+                console.error('网络异常:', err);
+            }
         }
 
-        let currentActiveId = 1;
+        // ==========================================
+        // 3. 智能坐标偏移算法（解决同省/同城市乐队重叠压盖问题）
+        // ==========================================
+        function processCoordinatesOffset(list) {
+            const coordMap = {};
+            return list.map(band => {
+                let lng = Number(band.lng) || 104.06;
+                let lat = Number(band.lat) || 30.57;
+                
+                const key = `${lng.toFixed(2)}_${lat.toFixed(2)}`;
+                if (coordMap[key] === undefined) {
+                    coordMap[key] = 0;
+                } else {
+                    coordMap[key]++;
+                    // 如果发现经纬度重复（或处于同一城市中心），进行微小的随机发散处理
+                    const angle = coordMap[key] * 137.5 * (Math.PI / 180); // 黄金角螺线发散
+                    const radius = 0.08 * Math.sqrt(coordMap[key]);
+                    lng += radius * Math.cos(angle);
+                    lat += radius * Math.sin(angle);
+                }
 
-        // 更新总数显示
-        document.getElementById('totalCount').innerText = `共 ${bandDatabase.length} 支乐队`;
+                return { ...band, lng, lat };
+            });
+        }
 
         // 渲染左侧列表
         const listContainer = document.getElementById('bandList');
@@ -268,7 +305,7 @@
                 item.className = `band-list-item ${band.id === currentActiveId ? 'active' : ''}`;
                 item.innerHTML = `
                     <div class="item-name">${band.name}</div>
-                    <div class="item-loc">📍 ${band.province}·${band.city} | ${band.style}</div>
+                    <div class="item-loc">📍 ${band.province || ''}·${band.city || ''} | ${band.style || ''}</div>
                 `;
                 item.onclick = () => {
                     currentActiveId = band.id;
@@ -282,137 +319,149 @@
         // 更新右侧卡片显示
         function updateCardContent(band) {
             document.getElementById('cardName').innerText = band.name;
-            document.getElementById('cardStyle').innerText = band.style;
-            document.getElementById('cardDesc').innerHTML = `📍 坐标：${band.province}·${band.city}<br>✨ 简介：${band.desc}`;
-            document.getElementById('cardAvatar').src = `https://picsum.photos/200/200?random=${band.id}`;
-            document.getElementById('likeCount').innerText = band.likes;
+            document.getElementById('cardStyle').innerText = band.style || '独立音乐';
+            document.getElementById('cardDesc').innerHTML = `📍 坐标：${band.province || ''}·${band.city || ''}<br>✨ 简介：${band.desc || '暂无简介'}`;
+            document.getElementById('cardAvatar').src = band.avatar || `https://picsum.photos/200/200?random=${band.id}`;
+            document.getElementById('likeCount').innerText = band.likes || 0;
         }
 
-        // 点赞交互
-        document.getElementById('likeBtn').onclick = () => {
+        // 点赞交互并实时同步更新 Supabase
+        document.getElementById('likeBtn').onclick = async () => {
             const currentBand = bandDatabase.find(b => b.id === currentActiveId);
             if (currentBand) {
-                currentBand.likes += 1;
+                currentBand.likes = (currentBand.likes || 0) + 1;
                 document.getElementById('likeCount').innerText = currentBand.likes;
+
+                // 同步更新到 Supabase 数据库
+                try {
+                    await _supabase
+                        .from('bands')
+                        .update({ likes: currentBand.likes })
+                        .eq('id', currentBand.id);
+                } catch (e) {
+                    console.error('点赞同步数据库失败', e);
+                }
             }
         };
 
-        // 初始化渲染
-        renderSidebar();
-        updateCardContent(bandDatabase[0]);
+        // ==========================================
+        // 4. 初始化 ECharts 地图
+        // ==========================================
+        function initMap(data) {
+            myChart = echarts.init(document.getElementById('map-container'));
 
-        // 初始化 ECharts 地图
-        var myChart = echarts.init(document.getElementById('map-container'));
+            var scatterData = data.map(band => ({
+                name: band.name,
+                value: [band.lng, band.lat],
+                bandObj: band
+            }));
 
-        // 将 100 多个乐队全部映射为地图呼吸散点
-        var scatterData = bandDatabase.map(band => ({
-            name: band.name,
-            value: [band.lng, band.lat],
-            bandObj: band
-        }));
-
-        var option = {
-            backgroundColor: '#0b0f19',
-            tooltip: {
-                trigger: 'item',
-                formatter: function (params) {
-                    if (params.seriesType === 'effectScatter') {
-                        return `<b>${params.data.bandObj.name}</b><br/>📍 ${params.data.bandObj.province}·${params.data.bandObj.city}`;
-                    }
-                    return params.name ? `<b>${params.name}</b> 音乐地图` : '';
-                }
-            },
-            geo: {
-                map: 'china',
-                roam: true,          // 允许缩放和拖拽平移
-                zoom: 1.25,
-                itemStyle: {
-                    areaColor: '#131c2e',    // 省份默认底色
-                    borderColor: '#1e293b',  // 地图边界线颜色
-                    borderWidth: 1.2
-                },
-                // 鼠标悬停时的省份与文字炫酷样式（加阴影）
-                emphasis: {
-                    itemStyle: {
-                        areaColor: '#1d4ed8', // 高亮高贵蓝
-                        borderColor: '#60a5fa',
-                        borderWidth: 1.5
-                    },
-                    label: {
-                        show: true,              // 悬停显示省份名称
-                        color: '#ffffff',         // 纯白高亮文字
-                        fontSize: 14,             // 字体大小
-                        fontWeight: 'bold',       // 字体加粗
-                        fontFamily: 'sans-serif',
-                        textShadowColor: 'rgba(0, 0, 0, 0.95)', // 强力黑色立体阴影
-                        textShadowBlur: 8,        // 阴影扩散模糊度
-                        textShadowOffsetX: 1,     // 阴影水平偏移
-                        textShadowOffsetY: 1      // 阴影垂直偏移
+            var option = {
+                backgroundColor: '#0b0f19',
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function (params) {
+                        if (params.seriesType === 'effectScatter') {
+                            return `<b>${params.data.bandObj.name}</b><br/>📍 ${params.data.bandObj.province || ''}·${params.data.bandObj.city || ''}`;
+                        }
+                        return params.name ? `<b>${params.name}</b> 音乐地图` : '';
                     }
                 },
-                // 点击选中时的省份与文字样式
-                select: {
+                geo: {
+                    map: 'china',
+                    roam: true,          // 允许缩放和拖拽平移
+                    zoom: 1.25,
                     itemStyle: {
-                        areaColor: '#2563eb',
-                        borderColor: '#93c5fd',
-                        borderWidth: 2
+                        areaColor: '#131c2e',    // 省份默认底色
+                        borderColor: '#1e293b',  // 地图边界线颜色
+                        borderWidth: 1.2
                     },
-                    label: {
-                        show: true,              // 选中显示省份名称
-                        color: '#ffffff',
-                        fontSize: 15,
-                        fontWeight: 'bold',
-                        textShadowColor: 'rgba(0, 0, 0, 0.95)',
-                        textShadowBlur: 8
-                    }
-                }
-            },
-            series: [
-                {
-                    name: '地图背景',
-                    type: 'map',
-                    geoIndex: 0,
-                    data: []
-                },
-                {
-                    name: '乐队动态坐标',
-                    type: 'effectScatter',       // 带波纹呼吸灯特效的散点
-                    coordinateSystem: 'geo',
-                    data: scatterData,
-                    symbolSize: 8,
-                    showEffectOn: 'render',
-                    rippleEffect: {
-                        brushType: 'stroke',
-                        scale: 3.5,
-                        period: 3
-                    },
-                    itemStyle: {
-                        color: '#38bdf8',          // 散点核心亮蓝
-                        shadowBlur: 8,
-                        shadowColor: '#38bdf8'
-                    },
+                    // 鼠标悬停省份的样式（带你要求的精致黑阴影加粗白色文字）
                     emphasis: {
-                        scale: 1.6
+                        itemStyle: {
+                            areaColor: '#1d4ed8', 
+                            borderColor: '#60a5fa',
+                            borderWidth: 1.5
+                        },
+                        label: {
+                            show: true,              
+                            color: '#ffffff',         
+                            fontSize: 14,             
+                            fontWeight: 'bold',       
+                            fontFamily: 'sans-serif',
+                            textShadowColor: 'rgba(0, 0, 0, 0.95)', 
+                            textShadowBlur: 8,        
+                            textShadowOffsetX: 1,     
+                            textShadowOffsetY: 1      
+                        }
+                    },
+                    // 点击选中省份时的样式
+                    select: {
+                        itemStyle: {
+                            areaColor: '#2563eb',
+                            borderColor: '#93c5fd',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: true,              
+                            color: '#ffffff',
+                            fontSize: 15,
+                            fontWeight: 'bold',
+                            textShadowColor: 'rgba(0, 0, 0, 0.95)',
+                            textShadowBlur: 8
+                        }
                     }
+                },
+                series: [
+                    {
+                        name: '地图背景',
+                        type: 'map',
+                        geoIndex: 0,
+                        data: []
+                    },
+                    {
+                        name: '乐队动态坐标',
+                        type: 'effectScatter',       // 带波纹呼吸灯特效的散点
+                        coordinateSystem: 'geo',
+                        data: scatterData,
+                        symbolSize: 8,
+                        showEffectOn: 'render',
+                        rippleEffect: {
+                            brushType: 'stroke',
+                            scale: 3.5,
+                            period: 3
+                        },
+                        itemStyle: {
+                            color: '#38bdf8',          
+                            shadowBlur: 8,
+                            shadowColor: '#38bdf8'
+                        },
+                        emphasis: {
+                            scale: 1.6
+                        }
+                    }
+                ]
+            };
+
+            myChart.setOption(option);
+
+            // 点击地图散点联动
+            myChart.on('click', function (params) {
+                if (params.seriesType === 'effectScatter' && params.data.bandObj) {
+                    const targetBand = params.data.bandObj;
+                    currentActiveId = targetBand.id;
+                    renderSidebar();
+                    updateCardContent(targetBand);
                 }
-            ]
-        };
+            });
+        }
 
-        myChart.setOption(option);
+        // 页面启动时触发加载
+        fetchBandsFromSupabase();
 
-        // 点击地图上的乐队散点时，联动左侧列表与右侧卡片
-        myChart.on('click', function (params) {
-            if (params.seriesType === 'effectScatter' && params.data.bandObj) {
-                const targetBand = params.data.bandObj;
-                currentActiveId = targetBand.id;
-                renderSidebar();
-                updateCardContent(targetBand);
-            }
-        });
-
-        // 浏览器窗口大小自适应调整
+        // 窗口大小自适应
         window.addEventListener('resize', function () {
-            myChart.resize();
+            if (myChart) myChart.resize();
         });
     </script>
 </body>
