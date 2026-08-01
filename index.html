@@ -170,74 +170,88 @@
             pointer-events: none;
         }
 
-        /* 右上角乐队信息面板（默认隐藏） */
+        /* 右上角精致小巧的乐队信息面板（默认隐藏） */
         .band-card {
             position: absolute;
             top: 24px;
             right: 24px;
-            width: 330px;
+            width: 260px;
             background: rgba(15, 23, 42, 0.88);
             border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 14px;
-            padding: 20px;
+            border-radius: 12px;
+            padding: 14px;
             backdrop-filter: blur(12px);
             z-index: 20;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
             display: none;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
         }
         .card-header {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 10px;
         }
         .card-avatar {
-            width: 52px;
-            height: 52px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid #3b82f6;
-            box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+            flex-shrink: 0;
+        }
+        .card-meta {
+            min-width: 0;
         }
         .card-meta h3 {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             color: #f8fafc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .card-tag {
             display: inline-block;
             background: rgba(59, 130, 246, 0.15);
             color: #60a5fa;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 11px;
             font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
         }
         .card-desc {
-            font-size: 13px;
+            font-size: 12px;
             color: #94a3b8;
-            line-height: 1.6;
             border-top: 1px solid rgba(255, 255, 255, 0.06);
-            padding-top: 10px;
+            padding-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
+        /* 更窄、更精致的点赞按钮 */
         .like-btn {
             background: linear-gradient(135deg, #f43f5e, #e11d48);
             color: white;
             border: none;
-            padding: 10px;
-            border-radius: 10px;
+            padding: 7px 12px;
+            border-radius: 8px;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 12px;
             cursor: pointer;
-            text-align: center;
-            box-shadow: 0 4px 14px rgba(244, 63, 94, 0.4);
+            align-self: center;
+            box-shadow: 0 3px 10px rgba(244, 63, 94, 0.35);
             transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
         }
         .like-btn:hover {
             opacity: 0.95;
@@ -300,7 +314,7 @@
             📍 请选择左侧列表或地图上的点
         </div>
         <button class="like-btn" id="likeBtn">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             送出小心心 ( <span id="likeCount">0</span> )
         </button>
     </div>
@@ -489,7 +503,7 @@
             });
         }
 
-        // 选中乐队后展示右侧卡片并填充内容（直接使用 Emoji 代替文字标签，并修正 description 字段）
+        // 选中乐队后展示右侧卡片并填充内容（仅保留位置坐标，已移除简介）
         function showCardContent(band) {
             const card = document.getElementById('bandCard');
             card.style.display = 'flex';
@@ -497,11 +511,9 @@
             document.getElementById('cardName').innerText = band.name;
             document.getElementById('cardStyle').innerText = band.style || '独立音乐';
             
-            // 📍 展示城市，✨ 展示简介（映射 Supabase 的 description 字段）
             const locationStr = band.city ? `${band.province || ''}·${band.city}` : (band.province || '未知地区');
-            const descStr = band.description || band.desc || '暂无简介';
+            document.getElementById('cardDesc').innerHTML = `📍 ${locationStr}`;
             
-            document.getElementById('cardDesc').innerHTML = `📍 ${locationStr}<br><br>✨ ${descStr}`;
             document.getElementById('cardAvatar').src = band.avatar || `https://picsum.photos/200/200?random=${band.id}`;
             document.getElementById('likeCount').innerText = band.likes;
             
