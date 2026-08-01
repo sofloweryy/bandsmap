@@ -401,7 +401,7 @@
             }
         }
 
-        // 严格校准全国主要城市与省份标准经纬度中心点（确保在地图边界内部）
+        // 经纬度校准
         const cityCoords = {
             '乌鲁木齐': [87.617733, 43.792818],
             '新疆': [87.617733, 43.792818],
@@ -482,9 +482,7 @@
             }
         }
 
-        // 优化坐标分布：使用分类螺旋分散算法，防止“团成蛋”
         function processCoordinates(list) {
-            // 先按城市/省份归类统计
             const locationGroups = {};
             
             list.forEach(band => {
@@ -511,7 +509,6 @@
 
             const processedList = [];
 
-            // 针对每个城市组进行螺旋均匀散开布局
             Object.keys(locationGroups).forEach(key => {
                 const group = locationGroups[key];
                 const count = group.items.length;
@@ -521,10 +518,9 @@
                     let finalLat = group.baseLat;
 
                     if (index > 0) {
-                        // 黄金角螺旋扩散 (Golden Angle Spiral)
                         const angle = index * 137.5 * (Math.PI / 180);
-                        // 随着数量增加适度扩大半径，保持组内清晰可见又不至于飘出省外
-                        const radius = 0.35 * Math.sqrt(index); 
+                        // 稍微减小扩散半径，让密集区域更紧凑精致
+                        const radius = 0.28 * Math.sqrt(index); 
                         finalLng += radius * Math.cos(angle);
                         finalLat += (radius * 0.75) * Math.sin(angle);
                     }
@@ -584,22 +580,37 @@
                 `;
                 item.onclick = (e) => {
                     e.stopPropagation();
-                    currentActiveId = band.id;
-                    sortAndRenderSidebar();
-                    showCardContent(band);
-                    
-                    if (myChart && band.province) {
-                        myChart.dispatchAction({
-                            type: 'highlight',
-                            name: band.province
-                        });
-                    }
-                    if (window.innerWidth <= 768) {
-                        document.getElementById('sidebar').classList.remove('open');
-                    }
+                    selectBand(band.id);
                 };
                 listContainer.appendChild(item);
             });
+        }
+
+        // 统一的选中/切换乐队逻辑（实现坐标异化）
+        function selectBand(bandId) {
+            currentActiveId = bandId;
+            sortAndRenderSidebar();
+            
+            const targetBand = bandDatabase.find(b => b.id === bandId);
+            if (targetBand) {
+                showCardContent(targetBand);
+                
+                if (myChart) {
+                    // 重新渲染地图以更新选中点样式（异化颜色）
+                    updateMapScatterData();
+                    
+                    if (targetBand.province) {
+                        myChart.dispatchAction({
+                            type: 'highlight',
+                            name: targetBand.province
+                        });
+                    }
+                }
+            }
+
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
         }
 
         function showCardContent(band) {
@@ -654,14 +665,38 @@
             }
         };
 
+        function updateMapScatterData() {
+            if (!myChart) return;
+
+            var scatterData = bandDatabase.map(band => {
+                const isSelected = (band.id === currentActiveId);
+                return {
+                    name: band.name,
+                    value: [band.lng, band.lat],
+                    bandObj: band,
+                    // 选中时异化样式：红色、更大尺寸
+                    symbolSize: isSelected ? 12 : 5,
+                    itemStyle: {
+                        color: isSelected ? '#fb7185' : '#38bdf8',
+                        shadowBlur: isSelected ? 14 : 4,
+                        shadowColor: isSelected ? '#fb7185' : '#38bdf8'
+                    }
+                };
+            });
+
+            myChart.setOption({
+                series: [
+                    {},
+                    {
+                        name: '乐队动态坐标',
+                        data: scatterData
+                    }
+                ]
+            });
+        }
+
         function initMap(data) {
             myChart = echarts.init(document.getElementById('map-container'));
-
-            var scatterData = data.map(band => ({
-                name: band.name,
-                value: [band.lng, band.lat],
-                bandObj: band
-            }));
 
             var option = {
                 backgroundColor: '#0b0f19',
@@ -728,41 +763,27 @@
                         name: '乐队动态坐标',
                         type: 'effectScatter',
                         coordinateSystem: 'geo',
-                        data: scatterData,
-                        symbolSize: 8,
+                        data: [],
+                        symbolSize: 5, // 缩小默认尺寸，使密集点群更清爽
                         showEffectOn: 'render',
                         rippleEffect: {
                             brushType: 'stroke',
-                            scale: 3.5,
+                            scale: 2.5, // 调小波纹扩散范围
                             period: 3
                         },
-                        itemStyle: {
-                            color: '#38bdf8',          
-                            shadowBlur: 8,
-                            shadowColor: '#38bdf8'
-                        },
                         emphasis: {
-                            scale: 1.6
+                            scale: 1.8
                         }
                     }
                 ]
             };
 
             myChart.setOption(option);
+            updateMapScatterData(); // 初始化坐标点及异化状态
 
             myChart.on('click', function (params) {
                 if (params.seriesType === 'effectScatter' && params.data.bandObj) {
-                    const targetBand = params.data.bandObj;
-                    currentActiveId = targetBand.id;
-                    sortAndRenderSidebar();
-                    showCardContent(targetBand);
-
-                    if (targetBand.province) {
-                        myChart.dispatchAction({
-                            type: 'highlight',
-                            name: targetBand.province
-                        });
-                    }
+                    selectBand(params.data.bandObj.id);
                 }
             });
         }
