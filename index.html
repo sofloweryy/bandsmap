@@ -2,187 +2,374 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>中国音乐地图 - 乐队分布</title>
-    <!-- 引入 ECharts -->
+    <title>中国独立音乐与乐队地图</title>
+    <!-- 引入 ECharts 核心库 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <!-- 引入中国地图 JSON 数据 -->
+    <!-- 引入中国地图标准 JSON 数据 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
     <style>
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
         body {
-            margin: 0;
             background-color: #0b0f19;
             width: 100vw;
             height: 100vh;
             display: flex;
-            justify-content: center;
-            align-items: center;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #f8fafc;
         }
-        /* 地图画布全屏铺满 */
-        #main {
-            width: 100%;
-            height: 100%;
-        }
-        /* 对应你截图右上角的乐队信息浮动卡片 */
-        .band-card {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 320px;
-            background-color: rgba(19, 28, 46, 0.88);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 12px;
-            padding: 16px;
-            backdrop-filter: blur(10px);
-            color: #ffffff;
-            z-index: 10;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+
+        /* 左侧乐队列表侧边栏 */
+        .sidebar {
+            width: 300px;
+            height: 100vh;
+            background: rgba(13, 18, 30, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            z-index: 20;
+            backdrop-filter: blur(10px);
         }
-        .band-header {
+        .sidebar-title {
+            padding: 24px 20px 16px 20px;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
-        .band-avatar {
-            width: 50px;
-            height: 50px;
+        .band-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .band-list-item {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .band-list-item:hover {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateX(2px);
+        }
+        .band-list-item.active {
+            background: rgba(37, 99, 235, 0.25);
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .band-list-item .item-name {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #ffffff;
+        }
+        .band-list-item .item-loc {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* 中间主地图容器 */
+        #map-container {
+            flex: 1;
+            height: 100vh;
+        }
+
+        /* 右上角乐队详细浮窗 */
+        .band-card {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 320px;
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            padding: 20px;
+            backdrop-filter: blur(12px);
+            z-index: 20;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .card-avatar {
+            width: 52px;
+            height: 52px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid #3b82f6;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
         }
-        .band-info h3 {
-            margin: 0 0 4px 0;
+        .card-meta h3 {
             font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
             color: #f8fafc;
         }
-        .band-tag {
+        .card-tag {
             display: inline-block;
-            background: rgba(59, 130, 246, 0.2);
+            background: rgba(59, 130, 246, 0.15);
             color: #60a5fa;
             padding: 2px 8px;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 12px;
+            font-weight: 500;
         }
-        .band-desc {
-            font-size: 13px; 
-            color: #94a3b8; 
-            line-height: 1.5;
+        .card-desc {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.6;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 12px;
         }
         .like-btn {
-            background: linear-gradient(135deg, #f43f5e, #fb7185);
+            background: linear-gradient(135deg, #f43f5e, #e11d48);
             color: white;
             border: none;
-            padding: 10px;
-            border-radius: 8px;
-            font-weight: bold;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
             cursor: pointer;
             text-align: center;
-            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4);
+            box-shadow: 0 4px 14px rgba(244, 63, 94, 0.4);
             transition: all 0.2s;
         }
         .like-btn:hover {
-            opacity: 0.9;
+            opacity: 0.95;
             transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(244, 63, 94, 0.6);
+        }
+        .like-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
     </style>
 </head>
 <body>
-    <!-- 地图容器 -->
-    <div id="main"></div>
 
-    <!-- 右上角乐队信息悬浮窗 -->
+    <!-- 左侧乐队列表 -->
+    <div class="sidebar">
+        <div class="sidebar-title">
+            <span>🎸</span> 音乐地图·乐队列表
+        </div>
+        <div class="band-list" id="bandList">
+            <!-- 动态生成列表项 -->
+        </div>
+    </div>
+
+    <!-- 中间地图区域 -->
+    <div id="map-container"></div>
+
+    <!-- 右上角乐队信息面板 -->
     <div class="band-card">
-        <div class="band-header">
-            <img class="band-avatar" src="https://picsum.photos/200/200?random=74" alt="乐队头像">
-            <div class="band-info">
-                <h3>棱镜乐队</h3>
-                <span class="band-tag">流行摇滚 / 独立流行</span>
+        <div class="card-header">
+            <img class="card-avatar" id="cardAvatar" src="https://picsum.photos/200/200?random=1" alt="头像">
+            <div class="card-meta">
+                <h3 id="cardName">声音玩具</h3>
+                <span class="card-tag" id="cardStyle">艺术摇滚 / 独立流行</span>
             </div>
         </div>
-        <div class="band-desc">
+        <div class="card-desc" id="cardDesc">
             📍 坐标：四川·成都<br>
-            🎸 风格：温柔清澈的流行独立乐队，治愈人心。
+            ✨ 简介：细腻优雅的成都之声，现场极具张力与浪漫。
         </div>
-        <button class="like-btn">❤️ 送出小心心 (点赞)</button>
+        <button class="like-btn" id="likeBtn">❤️ 送出小心心 ( <span id="likeCount">0</span> )</button>
     </div>
 
     <script>
-        // 初始化 ECharts 地图实例
-        var myChart = echarts.init(document.getElementById('main'));
+        // 乐队总数据库（包含经纬度坐标，可直接对应你的后端/Supabase数据源）
+        const bandDatabase = [
+            { id: 1, name: '声音玩具', city: '成都', province: '四川', style: '艺术摇滚 / 独立流行', lng: 104.06, lat: 30.57, desc: '细腻优雅的成都之声，现场极具张力与浪漫。', avatar: 'https://picsum.photos/200/200?random=1', likes: 128 },
+            { id: 2, name: '马赛克', city: '成都', province: '四川', style: '独立流行 / 迪斯科', lng: 104.08, lat: 30.65, desc: '制造复古浪漫的舞曲派对，随性热烈。', avatar: 'https://picsum.photos/200/200?random=2', likes: 95 },
+            { id: 3, name: '棱镜乐队', city: '宜兰', province: '台湾', style: '流行摇滚 / 独立流行', lng: 121.76, lat: 24.75, desc: '新一代独立流行代表，用温柔清澈治愈人心。', avatar: 'https://picsum.photos/200/200?random=3', likes: 230 },
+            { id: 4, name: '万能青年旅店', city: '石家庄', province: '河北', style: '另类摇滚 / 民谣摇滚', lng: 114.48, lat: 38.03, desc: '时代的荒凉与诗意，一把小号吹响时代回音。', avatar: 'https://picsum.photos/200/200?random=4', likes: 410 },
+            { id: 5, name: '新裤子', city: '北京', province: '北京', style: '朋克 / 新浪潮 / 电子', lng: 116.40, lat: 39.90, desc: '中国殿堂级新浪潮乐队，永远站在潮流前沿。', avatar: 'https://picsum.photos/200/200?random=5', likes: 356 }
+        ];
+
+        let currentActiveId = 1;
+
+        // 渲染左侧列表
+        const listContainer = document.getElementById('bandList');
+        function renderSidebar() {
+            listContainer.innerHTML = '';
+            bandDatabase.forEach(band => {
+                const item = document.createElement('div');
+                item.className = `band-list-item ${band.id === currentActiveId ? 'active' : ''}`;
+                item.innerHTML = `
+                    <div class="item-name">${band.name}</div>
+                    <div class="item-loc">📍 ${band.province}·${band.city} | ${band.style}</div>
+                `;
+                item.onclick = () => {
+                    currentActiveId = band.id;
+                    renderSidebar();
+                    updateCardContent(band);
+                };
+                listContainer.appendChild(item);
+            });
+        }
+
+        // 更新右侧卡片显示
+        function updateCardContent(band) {
+            document.getElementById('cardName').innerText = band.name;
+            document.getElementById('cardStyle').innerText = band.style;
+            document.getElementById('cardDesc').innerHTML = `📍 坐标：${band.province}·${band.city}<br>✨ 简介：${band.desc}`;
+            document.getElementById('cardAvatar').src = band.avatar;
+            document.getElementById('likeCount').innerText = band.likes;
+        }
+
+        // 点赞交互
+        document.getElementById('likeBtn').onclick = () => {
+            const currentBand = bandDatabase.find(b => b.id === currentActiveId);
+            if (currentBand) {
+                currentBand.likes += 1;
+                document.getElementById('likeCount').innerText = currentBand.likes;
+                // 此处可编写对接 Supabase 数据库更新点赞数的逻辑
+            }
+        };
+
+        // 初始化渲染
+        renderSidebar();
+        updateCardContent(bandDatabase[0]);
+
+        // 初始化 ECharts 地图
+        var myChart = echarts.init(document.getElementById('map-container'));
+
+        // 整理地图散点数据
+        var scatterData = bandDatabase.map(band => ({
+            name: band.name,
+            value: [band.lng, band.lat],
+            bandObj: band
+        }));
 
         var option = {
-            backgroundColor: '#0b0f19', // 科技暗色风背景
+            backgroundColor: '#0b0f19',
             tooltip: {
                 trigger: 'item',
                 formatter: function (params) {
-                    return params.name ? `<div style="padding:4px;"><b>${params.name}</b> 音乐地图</div>` : '';
+                    if (params.seriesType === 'effectScatter') {
+                        return `<b>${params.data.bandObj.name}</b><br/>📍 ${params.data.bandObj.province}·${params.data.bandObj.city}`;
+                    }
+                    return params.name ? `<b>${params.name}</b> 音乐地图` : '';
                 }
             },
             geo: {
                 map: 'china',
-                roam: true, // 支持鼠标缩放和平移拖拽
-                zoom: 1.2,
+                roam: true,          // 允许缩放和拖拽平移
+                zoom: 1.25,
                 itemStyle: {
-                    areaColor: '#131c2e',  // 省份默认底色
-                    borderColor: '#1e293b', // 省份网格边界线
-                    borderWidth: 1
+                    areaColor: '#131c2e',    // 省份默认底色
+                    borderColor: '#1e293b',  // 地图边界线颜色
+                    borderWidth: 1.2
                 },
                 // 鼠标悬停时的省份与文字炫酷样式
                 emphasis: {
                     itemStyle: {
-                        areaColor: '#1d4ed8', // 悬停高亮蓝
+                        areaColor: '#1d4ed8', // 高亮高贵蓝
                         borderColor: '#60a5fa',
                         borderWidth: 1.5
                     },
                     label: {
-                        show: true,              // 开启悬停显示省份文字
-                        color: '#ffffff',         // 纯白明亮字体
-                        fontSize: 14,             // 字体大小适中
+                        show: true,              // 悬停显示省份名称
+                        color: '#ffffff',         // 纯白高亮文字
+                        fontSize: 14,             // 适中的字体大小
                         fontWeight: 'bold',       // 字体加粗
                         fontFamily: 'sans-serif',
-                        textShadowColor: 'rgba(0, 0, 0, 0.9)', // 黑色立体阴影
-                        textShadowBlur: 6,        // 阴影模糊扩散
-                        textShadowOffsetX: 1,     // 阴影偏移
-                        textShadowOffsetY: 1
+                        textShadowColor: 'rgba(0, 0, 0, 0.95)', // 强力的黑立体阴影
+                        textShadowBlur: 8,        // 阴影扩散模糊度
+                        textShadowOffsetX: 1,     // 阴影水平偏移
+                        textShadowOffsetY: 1      // 阴影垂直偏移
                     }
                 },
                 // 点击选中时的省份与文字样式
                 select: {
                     itemStyle: {
-                        areaColor: '#2563eb', // 选中时的深蓝色
+                        areaColor: '#2563eb',
                         borderColor: '#93c5fd',
                         borderWidth: 2
                     },
                     label: {
-                        show: true,              // 开启选中显示省份文字
+                        show: true,              // 选中显示省份名称
                         color: '#ffffff',
                         fontSize: 15,
                         fontWeight: 'bold',
-                        textShadowColor: 'rgba(0, 0, 0, 0.9)',
-                        textShadowBlur: 6
+                        textShadowColor: 'rgba(0, 0, 0, 0.95)',
+                        textShadowBlur: 8
                     }
                 }
             },
             series: [
                 {
-                    name: '乐队分布',
+                    name: '地图背景',
                     type: 'map',
                     geoIndex: 0,
-                    data: [] // 后续如果需要动态传省份热度或数据，可在此处填充
+                    data: []
+                },
+                {
+                    name: '乐队动态坐标',
+                    type: 'effectScatter',       // 带波纹呼吸灯特效的散点
+                    coordinateSystem: 'geo',
+                    data: scatterData,
+                    symbolSize: 11,
+                    showEffectOn: 'render',
+                    rippleEffect: {
+                        brushType: 'stroke',
+                        scale: 4.5,
+                        period: 3
+                    },
+                    itemStyle: {
+                        color: '#38bdf8',          // 散点核心亮蓝
+                        shadowBlur: 10,
+                        shadowColor: '#38bdf8'
+                    },
+                    emphasis: {
+                        scale: 1.6
+                    }
                 }
             ]
         };
 
         myChart.setOption(option);
 
-        // 窗口大小改变时自动适配自适应
+        // 点击地图上的乐队散点时，联动左侧列表与右侧卡片
+        myChart.on('click', function (params) {
+            if (params.seriesType === 'effectScatter' && params.data.bandObj) {
+                const targetBand = params.data.bandObj;
+                currentActiveId = targetBand.id;
+                renderSidebar();
+                updateCardContent(targetBand);
+            }
+        });
+
+        // 浏览器窗口大小自适应调整
         window.addEventListener('resize', function () {
             myChart.resize();
         });
