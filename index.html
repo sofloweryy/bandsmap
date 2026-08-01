@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>独立乐队图鉴</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>独立音乐图鉴</title>
     <!-- 引入 ECharts 核心库 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <!-- 引入中国地图标准 JSON 数据 -->
@@ -14,6 +15,7 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
         body {
             background-color: #0b0f19;
@@ -25,66 +27,86 @@
             color: #f8fafc;
         }
 
-        /* 左侧窄版乐队列表侧边栏 */
+        /* 左侧现代化高级侧边栏 */
         .sidebar {
-            width: 240px;
+            width: 280px;
             height: 100vh;
-            background: rgba(13, 18, 30, 0.95);
+            background: linear-gradient(180deg, rgba(13, 18, 30, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%);
             border-right: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
             flex-direction: column;
             z-index: 20;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(16px);
+            transition: transform 0.3s ease;
         }
         .sidebar-header {
-            padding: 16px;
+            padding: 20px 16px 14px 16px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
+        /* 重塑的高颜值标题 */
         .sidebar-title-row {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            font-size: 15px;
-            font-weight: 700;
-            color: #f8fafc;
+            gap: 8px;
+            font-size: 17px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa 0%, #f43f5e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
         }
+        .sidebar-title-row .icon-badge {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(244, 63, 94, 0.2));
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            -webkit-text-fill-color: initial;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
         /* 顶部剩余小心心胶囊 */
         .global-heart-badge {
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 6px 12px;
-            border-radius: 16px;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 7px 12px;
+            border-radius: 20px;
             font-size: 12px;
             color: #cbd5e1;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05);
         }
         .global-heart-badge span {
             color: #fb7185;
-            font-weight: 600;
+            font-weight: 700;
         }
+
         /* 搜索框样式 */
         .search-box {
             width: 100%;
-            background: rgba(30, 41, 59, 0.6);
+            background: rgba(30, 41, 59, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            padding: 8px 12px;
+            border-radius: 10px;
+            padding: 9px 14px;
             font-size: 13px;
             color: #f8fafc;
             outline: none;
-            transition: all 0.2s;
+            transition: all 0.25s;
         }
         .search-box:focus {
             border-color: #3b82f6;
-            background: rgba(30, 41, 59, 0.9);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+            background: rgba(30, 41, 59, 0.85);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
         .search-box::placeholder {
             color: #64748b;
@@ -99,10 +121,10 @@
             gap: 8px;
         }
         .band-list-item {
-            background: rgba(30, 41, 59, 0.4);
+            background: rgba(30, 41, 59, 0.35);
             border: 1px solid rgba(255, 255, 255, 0.04);
             padding: 12px 14px;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             transition: all 0.25s ease;
             display: flex;
@@ -111,13 +133,12 @@
         }
         .band-list-item:hover {
             background: rgba(59, 130, 246, 0.15);
-            border-color: rgba(59, 130, 246, 0.4);
-            transform: translateX(2px);
+            border-color: rgba(59, 130, 246, 0.3);
         }
         .band-list-item.active {
             background: rgba(37, 99, 235, 0.25);
             border-color: #3b82f6;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.25);
         }
         .band-list-item .item-name {
             font-size: 14px;
@@ -156,13 +177,13 @@
         .footer-banner {
             position: absolute;
             bottom: 12px;
-            left: 260px;
+            left: 290px;
             right: 24px;
-            background: rgba(13, 18, 30, 0.8);
+            background: rgba(13, 18, 30, 0.75);
             border: 1px solid rgba(255, 255, 255, 0.06);
-            padding: 10px 16px;
+            padding: 8px 14px;
             border-radius: 8px;
-            font-size: 12px;
+            font-size: 11px;
             color: #94a3b8;
             text-align: center;
             backdrop-filter: blur(6px);
@@ -170,22 +191,22 @@
             pointer-events: none;
         }
 
-        /* 右上角极简轻量卡片（默认隐藏） */
+        /* 悬浮面板卡片 */
         .band-card {
             position: absolute;
             top: 24px;
             right: 24px;
-            width: 250px;
-            background: rgba(15, 23, 42, 0.88);
+            width: 260px;
+            background: rgba(15, 23, 42, 0.9);
             border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 12px;
-            padding: 12px 14px;
-            backdrop-filter: blur(12px);
-            z-index: 20;
-            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+            border-radius: 14px;
+            padding: 14px;
+            backdrop-filter: blur(16px);
+            z-index: 25;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
             display: none;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
         .card-header {
             display: flex;
@@ -193,12 +214,12 @@
             gap: 10px;
         }
         .card-avatar {
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid #3b82f6;
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
             flex-shrink: 0;
         }
         .card-meta {
@@ -208,7 +229,7 @@
         .card-meta h3 {
             font-size: 14px;
             font-weight: 700;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
             color: #f8fafc;
             white-space: nowrap;
             overflow: hidden;
@@ -226,7 +247,7 @@
         .card-tag {
             background: rgba(59, 130, 246, 0.15);
             color: #60a5fa;
-            padding: 1px 5px;
+            padding: 1px 6px;
             border-radius: 4px;
             font-weight: 550;
         }
@@ -234,18 +255,19 @@
             color: #94a3b8;
         }
 
-        /* 点赞按钮（更新为双爱心 💕） */
+        /* 点赞按钮（更新为双爱心 ❤️❤️） */
         .like-btn {
             background: linear-gradient(135deg, #f43f5e, #e11d48);
             color: white;
             border: none;
-            padding: 6px 10px;
-            border-radius: 8px;
+            padding: 8px 12px;
+            border-radius: 10px;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 13px;
             cursor: pointer;
             align-self: center;
-            box-shadow: 0 3px 10px rgba(244, 63, 94, 0.35);
+            width: 100%;
+            box-shadow: 0 4px 14px rgba(244, 63, 94, 0.4);
             transition: all 0.2s;
             display: flex;
             align-items: center;
@@ -262,30 +284,92 @@
             box-shadow: none;
         }
 
+        /* 移动端菜单控制按钮默认隐藏（PC不显示） */
+        .mobile-toggle-btn {
+            display: none;
+        }
+
+        /* ==========================================
+           响应式移动端适配优化 (Mobile Adaptation)
+           ========================================== */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column-reverse;
+            }
+            .sidebar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 45vh;
+                transform: translateY(calc(100% - 56px));
+                border-right: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.12);
+                border-radius: 20px 20px 0 0;
+                box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
+                transition: transform 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
+            }
+            .sidebar.open {
+                transform: translateY(0);
+            }
+            /* 手机端可点击的抽屉把手/标题栏 */
+            .sidebar-header {
+                cursor: pointer;
+                padding: 14px 16px;
+            }
+            .mobile-handle-bar {
+                width: 36px;
+                height: 4px;
+                background: rgba(255, 255, 255, 0.25);
+                border-radius: 2px;
+                align-self: center;
+                margin-bottom: 4px;
+            }
+            #map-container {
+                width: 100vw;
+                height: 100vh;
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+            .footer-banner {
+                display: none; /* 手机端隐藏版权栏以节省空间 */
+            }
+            .band-card {
+                top: 16px;
+                right: 16px;
+                left: 16px;
+                width: auto;
+            }
+        }
+
         /* 滚动条美化 */
         ::-webkit-scrollbar {
-            width: 5px;
+            width: 4px;
+            height: 4px;
         }
         ::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.15);
-            border-radius: 3px;
+            border-radius: 2px;
         }
     </style>
 </head>
 <body>
 
-    <!-- 左侧窄版乐队列表 -->
-    <div class="sidebar">
-        <div class="sidebar-header">
+    <!-- 左侧窄版/抽屉乐队列表 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header" onclick="toggleMobileSidebar()">
+            <div class="mobile-handle-bar"></div>
             <div class="sidebar-title-row">
-                <span>🎸 乐队图鉴</span>
+                <div class="icon-badge">🎸</div>
+                <span>独立音乐图鉴</span>
             </div>
-            <!-- 顶部剩余小心心 -->
+            <!-- 顶部剩余小心心（每日200个） -->
             <div class="global-heart-badge">
-                今日剩余小心心：<span id="remainingHearts">100</span> / 100
+                今日剩余小心心：<span id="remainingHearts">200</span> / 200
             </div>
-            <!-- 搜索框：支持搜名字、地区、风格 -->
-            <input type="text" id="searchInput" class="search-box" placeholder="🔍 搜索乐队、地区、风格..." oninput="handleSearch()">
+            <!-- 搜索框 -->
+            <input type="text" id="searchInput" class="search-box" placeholder="🔍 搜索乐队、地区、风格..." oninput="handleSearch()" onclick="event.stopPropagation()">
         </div>
         <div class="band-list" id="bandList">
             <!-- 动态渲染 -->
@@ -313,7 +397,7 @@
             </div>
         </div>
         <button class="like-btn" id="likeBtn">
-            送出小💕 ( <span id="likeCount">0</span> )
+            送出小❤️❤️ ( <span id="likeCount">0</span> )
         </button>
     </div>
 
@@ -330,12 +414,21 @@
         let currentActiveId = null;
         var myChart = null;
 
-        // 每天 100 个小心心本地配额管理
-        let remainingHearts = 100;
-        const todayKey = 'band_map_hearts_' + new Date().toDateString();
+        // 每天 200 个小心心本地配额管理
+        const MAX_HEARTS = 200;
+        let remainingHearts = MAX_HEARTS;
+        const todayKey = 'band_map_hearts_200_' + new Date().toDateString();
         const savedHearts = localStorage.getItem(todayKey);
         if (savedHearts !== null) {
             remainingHearts = parseInt(savedHearts, 10);
+        }
+
+        // 移动端侧边栏抽屉开关控制
+        function toggleMobileSidebar() {
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('open');
+            }
         }
 
         // 扩展的中国主要城市经纬度对照表
@@ -485,7 +578,8 @@
                     <div class="item-name">${band.name}</div>
                     ${likesHTML}
                 `;
-                item.onclick = () => {
+                item.onclick = (e) => {
+                    e.stopPropagation();
                     currentActiveId = band.id;
                     sortAndRenderSidebar();
                     showCardContent(band);
@@ -496,12 +590,16 @@
                             name: band.province
                         });
                     }
+                    // 在手机上点击列表项后自动收起抽屉以便查看地图
+                    if (window.innerWidth <= 768) {
+                        document.getElementById('sidebar').classList.remove('open');
+                    }
                 };
                 listContainer.appendChild(item);
             });
         }
 
-        // 选中乐队后展示右侧卡片（已修正城市定位文字前的多余分隔点）
+        // 选中乐队后展示右侧卡片
         function showCardContent(band) {
             const card = document.getElementById('bandCard');
             card.style.display = 'flex';
