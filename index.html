@@ -25,7 +25,7 @@
             color: #f8fafc;
         }
 
-        /* 左侧乐队列表侧边栏（调窄宽度，不占空间） */
+        /* 左侧窄版乐队列表侧边栏 */
         .sidebar {
             width: 240px;
             height: 100vh;
@@ -36,22 +36,60 @@
             z-index: 20;
             backdrop-filter: blur(10px);
         }
-        .sidebar-title {
-            padding: 24px 16px 16px 16px;
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+        .sidebar-header {
+            padding: 16px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .sidebar-title-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            font-size: 15px;
+            font-weight: 700;
+            color: #f8fafc;
         }
-        .sidebar-title span {
-            font-size: 11px;
-            color: #94a3b8;
-            font-weight: normal;
+        /* 顶部剩余小心心胶囊替代原热力排序 */
+        .global-heart-badge {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
+        .global-heart-badge span {
+            color: #fb7185;
+            font-weight: 600;
+        }
+        /* 搜索框样式 */
+        .search-box {
+            width: 100%;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: #f8fafc;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .search-box:focus {
+            border-color: #3b82f6;
+            background: rgba(30, 41, 59, 0.9);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+        }
+        .search-box::placeholder {
+            color: #64748b;
+        }
+
         .band-list {
             flex: 1;
             overflow-y: auto;
@@ -132,33 +170,10 @@
             pointer-events: none;
         }
 
-        /* 右上角全局胶囊挂件 */
-        .global-heart-badge {
-            position: absolute;
-            top: 24px;
-            right: 24px;
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            color: #f8fafc;
-            backdrop-filter: blur(10px);
-            z-index: 25;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .global-heart-badge span {
-            color: #fb7185;
-            font-weight: 600;
-        }
-
         /* 右上角乐队详细浮窗（默认隐藏） */
         .band-card {
             position: absolute;
-            top: 76px;
+            top: 24px;
             right: 24px;
             width: 330px;
             background: rgba(15, 23, 42, 0.88);
@@ -248,9 +263,16 @@
 
     <!-- 左侧窄版乐队列表 -->
     <div class="sidebar">
-        <div class="sidebar-title">
-            🎸 乐队图鉴
-            <span>热力排序</span>
+        <div class="sidebar-header">
+            <div class="sidebar-title-row">
+                <span>🎸 乐队图鉴</span>
+            </div>
+            <!-- 顶部剩余小心心替代原热力排序 -->
+            <div class="global-heart-badge">
+                今日剩余小心心：<span id="remainingHearts">100</span> / 100
+            </div>
+            <!-- 新增搜索框：支持搜名字、地区、风格 -->
+            <input type="text" id="searchInput" class="search-box" placeholder="🔍 搜索乐队、地区、风格..." oninput="handleSearch()">
         </div>
         <div class="band-list" id="bandList">
             <!-- 动态渲染 -->
@@ -259,11 +281,6 @@
 
     <!-- 中间地图区域 -->
     <div id="map-container"></div>
-
-    <!-- 右上角全局胶囊挂件 -->
-    <div class="global-heart-badge">
-        今日剩余小心心：<span id="remainingHearts">100</span>/100
-    </div>
 
     <!-- 底部版权和交流提示 -->
     <div class="footer-banner">
@@ -386,20 +403,41 @@
             });
         }
 
-        // 按点赞总数排序并渲染左侧列表（仅前 10 名显示小心心数，且不展示地区）
+        // 搜索处理函数：支持按名称、省份/城市、风格实时过滤
+        function handleSearch() {
+            sortAndRenderSidebar();
+        }
+
+        // 按点赞总数排序并渲染左侧列表（支持过滤、前10名展示小心心）
         function sortAndRenderSidebar() {
+            // 全局数据始终按点赞降序排
             bandDatabase.sort((a, b) => b.likes - a.likes);
+
+            const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+            
+            // 过滤匹配项
+            const filteredList = bandDatabase.filter(band => {
+                if (!keyword) return true;
+                const nameMatch = band.name && band.name.toLowerCase().includes(keyword);
+                const provinceMatch = band.province && band.province.toLowerCase().includes(keyword);
+                const cityMatch = band.city && band.city.toLowerCase().includes(keyword);
+                const styleMatch = band.style && band.style.toLowerCase().includes(keyword);
+                return nameMatch || provinceMatch || cityMatch || styleMatch;
+            });
 
             const listContainer = document.getElementById('bandList');
             listContainer.innerHTML = '';
             
-            bandDatabase.forEach((band, index) => {
+            filteredList.forEach(band => {
+                // 计算该乐队在完整热力榜单中的真实全局排名位置（从0开始算索引）
+                const globalIndex = bandDatabase.findIndex(b => b.id === band.id);
+
                 const item = document.createElement('div');
                 item.className = `band-list-item ${band.id === currentActiveId ? 'active' : ''}`;
                 
-                // 仅前 10 名显示小心心标签
+                // 仅排名前 10 名（globalIndex < 10）展示小心心数量
                 let likesHTML = '';
-                if (index < 10) {
+                if (globalIndex < 10) {
                     likesHTML = `
                         <div class="item-likes">
                             <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
@@ -416,6 +454,15 @@
                     currentActiveId = band.id;
                     sortAndRenderSidebar();
                     showCardContent(band);
+                    
+                    // 地图同步平移或高亮
+                    if (myChart) {
+                        myChart.dispatchAction({
+                            type: 'showTip',
+                            seriesIndex: 1,
+                            dataIndex: bandDatabase.findIndex(b => b.id === band.id)
+                        });
+                    }
                 };
                 listContainer.appendChild(item);
             });
