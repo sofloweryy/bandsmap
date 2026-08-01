@@ -214,7 +214,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        /* 标签栏：把风格和坐标放同一行，超长时自动滚动或省略 */
         .card-info-row {
             display: flex;
             align-items: center;
@@ -235,7 +234,7 @@
             color: #94a3b8;
         }
 
-        /* 精致小巧的点赞按钮（送出小❤️❤️） */
+        /* 点赞按钮（更新为双爱心 💕） */
         .like-btn {
             background: linear-gradient(135deg, #f43f5e, #e11d48);
             color: white;
@@ -314,7 +313,7 @@
             </div>
         </div>
         <button class="like-btn" id="likeBtn">
-            送出小💖 ( <span id="likeCount">0</span> )
+            送出小💕 ( <span id="likeCount">0</span> )
         </button>
     </div>
 
@@ -502,7 +501,7 @@
             });
         }
 
-        // 选中乐队后展示右侧卡片（将风格和位置坐标紧凑排布在同一行）
+        // 选中乐队后展示右侧卡片（已修正城市定位文字前的多余分隔点）
         function showCardContent(band) {
             const card = document.getElementById('bandCard');
             card.style.display = 'flex';
@@ -510,7 +509,7 @@
             document.getElementById('cardName').innerText = band.name;
             document.getElementById('cardStyle').innerText = band.style || '独立音乐';
             
-            const locationStr = band.city ? `${band.province || ''}·${band.city}` : (band.province || '未知地区');
+            const locationStr = band.city ? `${band.province || ''}${band.province && band.city ? '·' : ''}${band.city}` : (band.province || '未知地区');
             document.getElementById('cardLocation').innerText = `📍 ${locationStr}`;
             
             document.getElementById('cardAvatar').src = band.avatar || `https://picsum.photos/200/200?random=${band.id}`;
