@@ -37,19 +37,12 @@
             backdrop-filter: blur(10px);
         }
         .sidebar-title {
-            padding: 22px 20px 14px 20px;
+            padding: 24px 20px 16px 20px;
             font-size: 18px;
             font-weight: 700;
             letter-spacing: 0.5px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .sidebar-title span {
-            font-size: 12px;
-            color: #94a3b8;
-            font-weight: normal;
+            color: #f8fafc;
         }
         .band-list {
             flex: 1;
@@ -117,7 +110,7 @@
             position: absolute;
             top: 24px;
             right: 24px;
-            width: 320px;
+            width: 330px;
             background: rgba(15, 23, 42, 0.88);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 14px;
@@ -127,7 +120,7 @@
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 14px;
         }
         .card-header {
             display: flex;
@@ -162,13 +155,21 @@
             color: #94a3b8;
             line-height: 1.6;
             border-top: 1px solid rgba(255, 255, 255, 0.06);
-            padding-top: 12px;
+            padding-top: 10px;
+        }
+        .heart-tip {
+            font-size: 11px;
+            color: #fb7185;
+            text-align: center;
+            background: rgba(244, 63, 94, 0.1);
+            padding: 4px;
+            border-radius: 4px;
         }
         .like-btn {
             background: linear-gradient(135deg, #f43f5e, #e11d48);
             color: white;
             border: none;
-            padding: 12px;
+            padding: 10px;
             border-radius: 10px;
             font-weight: 600;
             font-size: 14px;
@@ -180,6 +181,11 @@
         .like-btn:hover {
             opacity: 0.95;
             transform: translateY(-1px);
+        }
+        .like-btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            box-shadow: none;
         }
 
         /* 滚动条美化 */
@@ -196,10 +202,7 @@
 
     <!-- 左侧乐队列表 -->
     <div class="sidebar">
-        <div class="sidebar-title">
-            <span>🎸 独立乐队图鉴</span>
-            <span id="totalCount">加载中...</span>
-        </div>
+        <div class="sidebar-title">🎸 独立乐队图鉴</div>
         <div class="band-list" id="bandList">
             <!-- 动态从 Supabase 加载 -->
         </div>
@@ -225,12 +228,13 @@
         <div class="card-desc" id="cardDesc">
             📍 坐标：请点击左侧列表或地图上的点<br>✨ 简介：查看乐队详细信息
         </div>
-        <button class="like-btn" id="likeBtn">❤️ 送出小心心 ( <span id="likeCount">0</span> )</button>
+        <div class="heart-tip">❤️ 每人每天可以有 100 个小心心可以送出</div>
+        <button class="like-btn" id="likeBtn">送出小心心 ( <span id="likeCount">0</span> ) | 今日剩余: <span id="remainingHearts">100</span></button>
     </div>
 
     <script>
         // ==========================================
-        // 1. Supabase 配置（已直接写入）
+        // 1. Supabase 配置
         // ==========================================
         const SUPABASE_URL = 'https://hrgzmwtgpacdxifcevwy.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_4XcXlLh77BtvmIajOGbpPA_T7d6b9fu';
@@ -241,52 +245,87 @@
         let currentActiveId = null;
         var myChart = null;
 
+        // 每天 100 个小心心本地配额管理
+        let remainingHearts = 100;
+        const todayKey = 'band_map_hearts_' + new Date().toDateString();
+        const savedHearts = localStorage.getItem(todayKey);
+        if (savedHearts !== null) {
+            remainingHearts = parseInt(savedHearts, 10);
+        }
+
+        // 常用城市经纬度对照表（防止数据库只存城市名导致地图坐标识别失败）
+        const cityCoords = {
+            '北京': [116.40, 39.90],
+            '上海': [121.47, 31.23],
+            '广州': [113.26, 23.12],
+            '深圳': [114.05, 22.54],
+            '成都': [104.06, 30.57],
+            '西安': [108.93, 34.34],
+            '台北': [121.50, 25.03],
+            '宜兰': [121.76, 24.75],
+            '石家庄': [114.48, 38.03],
+            '武汉': [114.30, 30.59],
+            '杭州': [120.15, 30.27],
+            '重庆': [106.55, 29.56],
+            '长沙': [112.93, 28.22],
+            '海丰': [115.32, 22.96],
+            '青岛': [120.38, 36.06],
+            '南京': [118.79, 32.06],
+            '厦门': [118.08, 24.47]
+        };
+
         // ==========================================
-        // 2. 从 Supabase 异步加载真实 100+ 乐队数据
+        // 2. 从 Supabase 加载数据并处理坐标偏移
         // ==========================================
         async function fetchBandsFromSupabase() {
             try {
-                // 对应你的表名 bands，获取所有字段
                 const { data, error } = await _supabase.from('bands').select('*');
                 
                 if (error) {
                     console.error('加载 Supabase 数据失败:', error);
-                    document.getElementById('totalCount').innerText = '加载失败';
                     return;
                 }
 
                 if (data && data.length > 0) {
-                    bandDatabase = processCoordinatesOffset(data); // 核心：处理同坐标重叠点发散
+                    bandDatabase = processCoordinates(data);
                     currentActiveId = bandDatabase[0].id;
                     
-                    document.getElementById('totalCount').innerText = `共 ${bandDatabase.length} 支乐队`;
                     renderSidebar();
                     updateCardContent(bandDatabase[0]);
                     initMap(bandDatabase);
-                } else {
-                    document.getElementById('totalCount').innerText = '暂无乐队数据';
                 }
             } catch (err) {
                 console.error('网络异常:', err);
-                document.getElementById('totalCount').innerText = '连接异常';
             }
         }
 
-        // ==========================================
-        // 3. 智能坐标偏移算法（解决同省/同城市乐队重叠压盖问题）
-        // ==========================================
-        function processCoordinatesOffset(list) {
+        // 匹配经纬度，并对同城市/同坐标点做黄金角螺旋发散防重叠
+        function processCoordinates(list) {
             const coordMap = {};
             return list.map(band => {
-                let lng = Number(band.lng) || 104.06;
-                let lat = Number(band.lat) || 30.57;
-                
+                let lng = 104.06;
+                let lat = 30.57;
+
+                // 如果数据库里本身有数字经纬度
+                if (band.lng && !isNaN(band.lng) && band.lat && !isNaN(band.lat)) {
+                    lng = Number(band.lng);
+                    lat = Number(band.lat);
+                } 
+                // 如果存的是城市名字，通过对照表转换
+                else if (band.city && cityCoords[band.city]) {
+                    lng = cityCoords[band.city][0];
+                    lat = cityCoords[band.city][1];
+                } else if (band.province && cityCoords[band.province]) {
+                    lng = cityCoords[band.province][0];
+                    lat = cityCoords[band.province][1];
+                }
+
+                // 防重叠智能偏移
                 const key = `${lng.toFixed(2)}_${lat.toFixed(2)}`;
                 if (coordMap[key] === undefined) {
                     coordMap[key] = 0;
                 } else {
                     coordMap[key]++;
-                    // 如果发现经纬度重复（或处于同一城市中心），进行微小的黄金角螺旋发散处理
                     const angle = coordMap[key] * 137.5 * (Math.PI / 180); 
                     const radius = 0.08 * Math.sqrt(coordMap[key]);
                     lng += radius * Math.cos(angle);
@@ -324,16 +363,36 @@
             document.getElementById('cardDesc').innerHTML = `📍 坐标：${band.province || ''}·${band.city || ''}<br>✨ 简介：${band.desc || '暂无简介'}`;
             document.getElementById('cardAvatar').src = band.avatar || `https://picsum.photos/200/200?random=${band.id}`;
             document.getElementById('likeCount').innerText = band.likes || 0;
+            document.getElementById('remainingHearts').innerText = remainingHearts;
+
+            const btn = document.getElementById('likeBtn');
+            if (remainingHearts <= 0) {
+                btn.disabled = true;
+                btn.innerText = '今日小心心已送完';
+            } else {
+                btn.disabled = false;
+            }
         }
 
-        // 点赞交互并实时同步更新 Supabase
+        // 点赞交互
         document.getElementById('likeBtn').onclick = async () => {
+            if (remainingHearts <= 0) return;
+
+            remainingHearts--;
+            localStorage.setItem(todayKey, remainingHearts);
+
             const currentBand = bandDatabase.find(b => b.id === currentActiveId);
             if (currentBand) {
                 currentBand.likes = (currentBand.likes || 0) + 1;
                 document.getElementById('likeCount').innerText = currentBand.likes;
+                document.getElementById('remainingHearts').innerText = remainingHearts;
 
-                // 同步更新到 Supabase 数据库
+                if (remainingHearts <= 0) {
+                    const btn = document.getElementById('likeBtn');
+                    btn.disabled = true;
+                    btn.innerText = '今日小心心已送完';
+                }
+
                 try {
                     await _supabase
                         .from('bands')
@@ -346,7 +405,7 @@
         };
 
         // ==========================================
-        // 4. 初始化 ECharts 地图
+        // 3. 初始化 ECharts 地图
         // ==========================================
         function initMap(data) {
             myChart = echarts.init(document.getElementById('map-container'));
@@ -370,14 +429,13 @@
                 },
                 geo: {
                     map: 'china',
-                    roam: true,          // 允许缩放和拖拽平移
+                    roam: true,
                     zoom: 1.25,
                     itemStyle: {
-                        areaColor: '#131c2e',    // 省份默认底色
-                        borderColor: '#1e293b',  // 地图边界线颜色
+                        areaColor: '#131c2e',
+                        borderColor: '#1e293b',
                         borderWidth: 1.2
                     },
-                    // 鼠标悬停省份的样式（带精致黑阴影加粗白色文字）
                     emphasis: {
                         itemStyle: {
                             areaColor: '#1d4ed8', 
@@ -396,7 +454,6 @@
                             textShadowOffsetY: 1      
                         }
                     },
-                    // 点击选中省份时的样式
                     select: {
                         itemStyle: {
                             areaColor: '#2563eb',
@@ -422,7 +479,7 @@
                     },
                     {
                         name: '乐队动态坐标',
-                        type: 'effectScatter',       // 带波纹呼吸灯特效的散点
+                        type: 'effectScatter',
                         coordinateSystem: 'geo',
                         data: scatterData,
                         symbolSize: 8,
@@ -446,7 +503,6 @@
 
             myChart.setOption(option);
 
-            // 点击地图散点联动
             myChart.on('click', function (params) {
                 if (params.seriesType === 'effectScatter' && params.data.bandObj) {
                     const targetBand = params.data.bandObj;
@@ -457,10 +513,8 @@
             });
         }
 
-        // 页面启动时触发加载
         fetchBandsFromSupabase();
 
-        // 窗口大小自适应
         window.addEventListener('resize', function () {
             if (myChart) myChart.resize();
         });
