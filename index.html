@@ -297,7 +297,7 @@
             </div>
         </div>
         <div class="card-desc" id="cardDesc">
-            📍 坐标：请点击左侧列表或地图上的点<br>✨ 简介：查看乐队详细信息
+            📍 请选择左侧列表或地图上的点
         </div>
         <button class="like-btn" id="likeBtn">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
@@ -326,16 +326,14 @@
             remainingHearts = parseInt(savedHearts, 10);
         }
 
-        // 扩展的中国主要城市经纬度对照表（支持各地市精确分布）
+        // 扩展的中国主要城市经纬度对照表
         const cityCoords = {
-            // 陕西
             '西安': [108.93, 34.34],
             '榆林': [109.74, 38.29],
             '宝鸡': [107.15, 34.38],
             '咸阳': [108.70, 34.33],
             '汉中': [107.02, 33.07],
             '延安': [109.49, 36.59],
-            // 广东
             '广州': [113.26, 23.12],
             '深圳': [114.05, 22.54],
             '珠海': [113.57, 22.27],
@@ -343,23 +341,19 @@
             '佛山': [113.12, 23.02],
             '东莞': [113.75, 23.02],
             '海丰': [115.32, 22.96],
-            // 四川
             '成都': [104.06, 30.57],
             '绵阳': [104.73, 31.46],
             '乐山': [103.76, 29.55],
             '自贡': [104.77, 29.34],
             '宜宾': [104.61, 28.77],
-            // 北京/上海/天津/重庆直辖市
             '北京': [116.40, 39.90],
             '上海': [121.47, 31.23],
             '天津': [117.20, 39.08],
             '重庆': [106.55, 29.56],
-            // 台湾
             '台北': [121.50, 25.03],
             '高雄': [120.31, 22.62],
             '台中': [120.67, 24.14],
             '宜兰': [121.76, 24.75],
-            // 其他省份主要城市
             '呼和浩特': [111.75, 40.84],
             '包头': [109.84, 40.65],
             '杭州': [120.15, 30.27],
@@ -404,7 +398,7 @@
             }
         }
 
-        // 匹配经纬度：优先使用精确经纬度 -> 其次匹配具体城市 -> 再次匹配省份兜底，最后采用黄金角螺旋防重叠
+        // 匹配经纬度并防重叠
         function processCoordinates(list) {
             const coordMap = {};
             return list.map(band => {
@@ -484,7 +478,6 @@
                     sortAndRenderSidebar();
                     showCardContent(band);
                     
-                    // 地图高亮对应的省份区域
                     if (myChart && band.province) {
                         myChart.dispatchAction({
                             type: 'highlight',
@@ -496,14 +489,19 @@
             });
         }
 
-        // 选中乐队后展示右侧卡片并填充内容
+        // 选中乐队后展示右侧卡片并填充内容（直接使用 Emoji 代替文字标签，并修正 description 字段）
         function showCardContent(band) {
             const card = document.getElementById('bandCard');
             card.style.display = 'flex';
 
             document.getElementById('cardName').innerText = band.name;
             document.getElementById('cardStyle').innerText = band.style || '独立音乐';
-            document.getElementById('cardDesc').innerHTML = `📍 坐标：${band.province || ''}·${band.city || ''}<br>✨ 简介：${band.desc || '暂无简介'}`;
+            
+            // 📍 展示城市，✨ 展示简介（映射 Supabase 的 description 字段）
+            const locationStr = band.city ? `${band.province || ''}·${band.city}` : (band.province || '未知地区');
+            const descStr = band.description || band.desc || '暂无简介';
+            
+            document.getElementById('cardDesc').innerHTML = `📍 ${locationStr}<br><br>✨ ${descStr}`;
             document.getElementById('cardAvatar').src = band.avatar || `https://picsum.photos/200/200?random=${band.id}`;
             document.getElementById('likeCount').innerText = band.likes;
             
@@ -564,7 +562,6 @@
                 tooltip: {
                     trigger: 'item',
                     formatter: function (params) {
-                        // 触碰到坐标时：只展示乐队名字
                         if (params.seriesType === 'effectScatter') {
                             return `<b>${params.data.bandObj.name}</b>`;
                         }
@@ -647,7 +644,6 @@
 
             myChart.setOption(option);
 
-            // 地图点点击事件：点击坐标后高亮该乐队所在省份并弹出卡片
             myChart.on('click', function (params) {
                 if (params.seriesType === 'effectScatter' && params.data.bandObj) {
                     const targetBand = params.data.bandObj;
