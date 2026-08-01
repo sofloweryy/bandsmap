@@ -230,10 +230,10 @@
 
     <script>
         // ==========================================
-        // 1. 配置你的 Supabase 凭证
+        // 1. Supabase 配置（已直接写入）
         // ==========================================
-        const SUPABASE_URL = '你的Supabase_URL'; 
-        const SUPABASE_ANON_KEY = '你的Supabase_ANON_KEY';
+        const SUPABASE_URL = 'https://hrgzmwtgpacdxifcevwy.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_4XcXlLh77BtvmIajOGbpPA_T7d6b9fu';
         
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -246,7 +246,7 @@
         // ==========================================
         async function fetchBandsFromSupabase() {
             try {
-                // 假设你的表名叫 bands，字段包含 id, name, city, province, style, lng, lat, desc, likes
+                // 对应你的表名 bands，获取所有字段
                 const { data, error } = await _supabase.from('bands').select('*');
                 
                 if (error) {
@@ -268,6 +268,7 @@
                 }
             } catch (err) {
                 console.error('网络异常:', err);
+                document.getElementById('totalCount').innerText = '连接异常';
             }
         }
 
@@ -285,8 +286,8 @@
                     coordMap[key] = 0;
                 } else {
                     coordMap[key]++;
-                    // 如果发现经纬度重复（或处于同一城市中心），进行微小的随机发散处理
-                    const angle = coordMap[key] * 137.5 * (Math.PI / 180); // 黄金角螺线发散
+                    // 如果发现经纬度重复（或处于同一城市中心），进行微小的黄金角螺旋发散处理
+                    const angle = coordMap[key] * 137.5 * (Math.PI / 180); 
                     const radius = 0.08 * Math.sqrt(coordMap[key]);
                     lng += radius * Math.cos(angle);
                     lat += radius * Math.sin(angle);
@@ -376,7 +377,7 @@
                         borderColor: '#1e293b',  // 地图边界线颜色
                         borderWidth: 1.2
                     },
-                    // 鼠标悬停省份的样式（带你要求的精致黑阴影加粗白色文字）
+                    // 鼠标悬停省份的样式（带精致黑阴影加粗白色文字）
                     emphasis: {
                         itemStyle: {
                             areaColor: '#1d4ed8', 
