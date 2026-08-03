@@ -277,7 +277,7 @@
             box-shadow: none;
         }
 
-        /* 手机端顶部双Tab导航栏（默认隐藏，仅在小屏生效） */
+        /* 手机端顶部双Tab导航栏 */
         .mobile-top-nav {
             display: none;
         }
@@ -287,7 +287,7 @@
                 flex-direction: column;
             }
             .sidebar {
-                display: none; /* 默认在手机端隐藏，通过Tab切换显示 */
+                display: none;
                 width: 100vw;
                 height: calc(100vh - 54px);
                 position: absolute;
@@ -311,7 +311,6 @@
             .footer-banner {
                 display: none;
             }
-            /* 手机端顶部Tab切换栏 */
             .mobile-top-nav {
                 display: flex;
                 width: 100vw;
@@ -374,7 +373,6 @@
 </head>
 <body>
 
-    <!-- 手机端顶部 2 个模块切换导航 -->
     <div class="mobile-top-nav">
         <button class="mobile-tab-btn active" id="tabMapBtn" onclick="switchMobileTab('map')">
             🗺️ 地图模式
@@ -384,7 +382,6 @@
         </button>
     </div>
 
-    <!-- 左侧/手机端列表面板 -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-title-row">
@@ -399,14 +396,12 @@
         <div class="band-list" id="bandList"></div>
     </div>
 
-    <!-- 地图容器 -->
     <div id="map-container"></div>
 
     <div class="footer-banner">
         仅供娱乐切勿较真儿 | 欢迎乐迷交流指正 ｜ 联系美丽且智慧的开发者 公众号：摘花花 ｜ 邮箱：zhaihuahua1701@gmail.com
     </div>
 
-    <!-- 乐队详情弹窗卡片 -->
     <div class="band-card" id="bandCard">
         <div class="card-header">
             <img class="card-avatar" id="cardAvatar" src="https://picsum.photos/200/200?random=1" alt="头像">
@@ -442,7 +437,6 @@
             remainingHearts = parseInt(savedHearts, 10);
         }
 
-        // 手机端顶部两模块切换逻辑
         function switchMobileTab(mode) {
             const mapContainer = document.getElementById('map-container');
             const sidebar = document.getElementById('sidebar');
@@ -467,7 +461,6 @@
             document.getElementById('bandCard').style.display = 'none';
         }
 
-        // 经纬度校准
         const cityCoords = {
             '乌鲁木齐': [87.617733, 43.792818],
             '新疆': [87.617733, 43.792818],
@@ -637,7 +630,6 @@
                 item.onclick = () => {
                     selectBand(band.id);
                     if (window.innerWidth <= 768) {
-                        // 点列表中的乐队时，自动切回地图模式看位置
                         switchMobileTab('map');
                     }
                 };
@@ -654,6 +646,13 @@
                 showCardContent(targetBand);
                 if (myChart) {
                     updateMapScatterData();
+                    // 丝滑聚焦到选中的坐标点
+                    myChart.setOption({
+                        geo: {
+                            center: [targetBand.lng, targetBand.lat],
+                            zoom: 1.8
+                        }
+                    });
                 }
             }
         }
@@ -718,11 +717,11 @@
                     name: band.name,
                     value: [band.lng, band.lat],
                     bandObj: band,
-                    symbolSize: isSelected ? 12 : 5,
+                    symbolSize: isSelected ? 11 : 6,
                     itemStyle: {
                         color: isSelected ? '#fb7185' : '#38bdf8',
-                        shadowBlur: isSelected ? 14 : 4,
-                        shadowColor: isSelected ? '#fb7185' : '#38bdf8'
+                        shadowBlur: isSelected ? 16 : 4,
+                        shadowColor: isSelected ? '#f43f5e' : '#0ea5e9'
                     }
                 };
             });
@@ -747,7 +746,7 @@
                     trigger: 'item',
                     formatter: function (params) {
                         if (params.seriesType === 'effectScatter') {
-                            return `<b>${params.data.bandObj.name}</b>`;
+                            return `<b>🎵 ${params.data.bandObj.name}</b>`;
                         }
                         return '';
                     }
@@ -756,6 +755,10 @@
                     map: 'china',
                     roam: true,
                     zoom: 1.25,
+                    scaleLimit: {
+                        min: 1,
+                        max: 6
+                    },
                     itemStyle: {
                         areaColor: '#131c2e',
                         borderColor: '#1e293b',
@@ -789,15 +792,15 @@
                         type: 'effectScatter',
                         coordinateSystem: 'geo',
                         data: [],
-                        symbolSize: 5,
+                        symbolSize: 6,
                         showEffectOn: 'render',
                         rippleEffect: {
                             brushType: 'stroke',
-                            scale: 2.5,
-                            period: 3
+                            scale: 3,
+                            period: 2.5
                         },
                         emphasis: {
-                            scale: 1.8
+                            scale: 2
                         }
                     }
                 ]
